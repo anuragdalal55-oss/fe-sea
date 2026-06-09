@@ -1,26 +1,22 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './hooks/useAuth';
-import api from './utils/api';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-
-// Pages
-import Login from './pages/Login';
-import MawbPage from './pages/MawbPage';
-import HawbPage from './pages/HawbPage';
-import MultipleHawbPage from './pages/MultipleHawbPage';
-import TransmissionPage from './pages/TransmissionPage';
-import LocationPage from './pages/LocationPage';
-import CanDoPage from './pages/CanDoPage';
-import AccountingPage from './pages/AccountingPage';
-import { ChecklistPage, ConsolStatementPage } from './pages/ReportPages';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import {
-  RegisterUserPage, RegisterProfilePage, ChangePasswordPage,
-  StatementConsolPage, StatementHawbPage, DownloadFilePage, ChangeInvoicePage,
+  ChangePasswordPage,
+  RegisterProfilePage,
+  RegisterUserPage,
 } from './pages/AdminPages';
+import CarrierMasterPage from './pages/CarrierMasterPage';
+import HblEditPage from './pages/HblEditPage';
+import LocationPage from './pages/LocationPage';
+import Login from './pages/Login';
+import MloMasterPage from './pages/MloMasterPage';
 import { NotFoundPage } from './pages/Placeholders';
+import SeaConsolePage from './pages/SeaConsolePage';
+import api from './utils/api';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <>
@@ -33,9 +29,6 @@ const AppRoutes: React.FC = () => {
   const { isAuthenticated, needsLocationSelect } = useAuth();
   const currentPath = useLocation().pathname;
 
-
-  console.log('AppRoutes render', { isAuthenticated, needsLocationSelect, currentPath });
-
   if (!isAuthenticated) {
     return (
       <Routes>
@@ -45,7 +38,6 @@ const AppRoutes: React.FC = () => {
     );
   }
 
-  // Force location selection before accessing any other page
   if (needsLocationSelect && currentPath !== '/location') {
     return (
       <AppLayout>
@@ -59,56 +51,27 @@ const AppRoutes: React.FC = () => {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/mawb" replace />} />
-        <Route path="/login" element={<Navigate to="/mawb" replace />} />
-
-        {/* MAWB */}
-        <Route path="/mawb" element={<ProtectedRoute><MawbPage /></ProtectedRoute>} />
-
-        {/* HAWB */}
-        <Route path="/hawb" element={<ProtectedRoute><HawbPage /></ProtectedRoute>} />
-        <Route path="/hawb/new" element={<ProtectedRoute><HawbPage /></ProtectedRoute>} />
-        <Route path="/hawb/add-multiple" element={<ProtectedRoute><MultipleHawbPage /></ProtectedRoute>} />
-
-        {/* Reports */}
-        <Route path="/report/checklist" element={<ProtectedRoute><ChecklistPage /></ProtectedRoute>} />
-        <Route path="/report/consol-statement" element={<ProtectedRoute><ConsolStatementPage /></ProtectedRoute>} />
-        <Route path="/report/account-statement" element={<ProtectedRoute><ConsolStatementPage /></ProtectedRoute>} />
-
-        {/* Transmission */}
-        <Route path="/transmission/generate" element={<ProtectedRoute><TransmissionPage /></ProtectedRoute>} />
-        <Route path="/transmission/console" element={<ProtectedRoute><TransmissionPage /></ProtectedRoute>} />
-
-        {/* Location */}
+        <Route path="/" element={<Navigate to="/mbl" replace />} />
+        <Route path="/login" element={<Navigate to="/mbl" replace />} />
+        <Route path="/mbl" element={<ProtectedRoute><SeaConsolePage /></ProtectedRoute>} />
+        <Route path="/hbl/:id" element={<ProtectedRoute><HblEditPage /></ProtectedRoute>} />
+        <Route path="/masters/carriers" element={<ProtectedRoute><CarrierMasterPage /></ProtectedRoute>} />
+        <Route path="/masters/mlos" element={<ProtectedRoute><MloMasterPage /></ProtectedRoute>} />
         <Route path="/location" element={<ProtectedRoute><LocationPage /></ProtectedRoute>} />
-
-        {/* CAN/DO */}
-        <Route path="/can-do" element={<ProtectedRoute><CanDoPage /></ProtectedRoute>} />
-
-        {/* Accounting – admin only */}
-        <Route path="/accounting/*" element={<ProtectedRoute roles={['master_admin', 'admin']}><AccountingPage /></ProtectedRoute>} />
-
-        {/* Admin */}
         <Route path="/admin/register-user" element={<ProtectedRoute roles={['master_admin', 'admin']}><RegisterUserPage /></ProtectedRoute>} />
         <Route path="/admin/register-profile" element={<ProtectedRoute roles={['master_admin', 'admin']}><RegisterProfilePage /></ProtectedRoute>} />
         <Route path="/admin/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
-        <Route path="/admin/statement-consol" element={<ProtectedRoute roles={['master_admin', 'admin']}><StatementConsolPage /></ProtectedRoute>} />
-        <Route path="/admin/statement-hawb" element={<ProtectedRoute roles={['master_admin', 'admin']}><StatementHawbPage /></ProtectedRoute>} />
-        <Route path="/admin/download-file" element={<ProtectedRoute roles={['master_admin', 'admin']}><DownloadFilePage /></ProtectedRoute>} />
-        <Route path="/admin/change-invoice" element={<ProtectedRoute roles={['master_admin', 'admin']}><ChangeInvoicePage /></ProtectedRoute>} />
         <Route path="/admin/*" element={<ProtectedRoute roles={['master_admin', 'admin']}><NotFoundPage /></ProtectedRoute>} />
-
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppLayout>
   );
 };
 
-// Ping backend every 14 min to prevent Render free tier spin-down
 const useKeepAlive = () => {
   useEffect(() => {
     const ping = () => api.get('/health').catch(() => {});
-    ping(); // ping on mount
+    ping();
     const id = setInterval(ping, 14 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
@@ -116,27 +79,28 @@ const useKeepAlive = () => {
 
 const App: React.FC = () => {
   useKeepAlive();
+
   return (
-  <BrowserRouter>
-    <AuthProvider>
-      <AppRoutes />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3500,
-          style: {
-            background: '#fff',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            fontSize: 13,
-            fontFamily: 'Inter, sans-serif',
-          },
-          success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
-          error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
-        }}
-      />
-    </AuthProvider>
-  </BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3500,
+            style: {
+              background: '#ffffff',
+              border: '1px solid #d4dbff',
+              boxShadow: '0 18px 45px rgba(24, 64, 242, 0.12)',
+              fontSize: 13,
+              fontFamily: 'Barlow, sans-serif',
+            },
+            success: { iconTheme: { primary: '#16a34a', secondary: '#fff' } },
+            error: { iconTheme: { primary: '#dc2626', secondary: '#fff' } },
+          }}
+        />
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 

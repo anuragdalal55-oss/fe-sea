@@ -1,31 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-interface DropdownItem { label: string; path: string; }
-interface NavItem { label: string; path?: string; items?: DropdownItem[]; adminOnly?: boolean; noUser?: boolean; }
+interface DropdownItem {
+  label: string;
+  path: string;
+}
+
+interface NavItem {
+  label: string;
+  path?: string;
+  items?: DropdownItem[];
+  adminOnly?: boolean;
+}
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'MAWB', path: '/mawb' },
+  { label: 'MBL Console', path: '/mbl' },
   {
-    label: 'HAWB',
+    label: 'Masters',
     items: [
-      { label: 'Add House AWB', path: '/hawb/new' },
-      { label: 'Add Multiple Hawbs', path: '/hawb/add-multiple' },
-    ],
-  },
-  {
-    label: 'Report',
-    items: [
-      { label: 'CheckList', path: '/report/checklist' },
-      { label: 'Statement by Consol', path: '/report/consol-statement' },
-    ],
-  },
-  {
-    label: 'Transmission',
-    items: [
-      { label: 'Generate File', path: '/transmission/generate' },
-      { label: 'Transmit Console', path: '/transmission/console' },
+      { label: 'Carrier Master', path: '/masters/carriers' },
+      { label: 'MLO Master', path: '/masters/mlos' },
     ],
   },
   { label: 'Location', path: '/location' },
@@ -35,22 +30,7 @@ const NAV_ITEMS: NavItem[] = [
     items: [
       { label: 'Register User', path: '/admin/register-user' },
       { label: 'Register Profile', path: '/admin/register-profile' },
-      { label: 'Statement By Consol User', path: '/admin/statement-consol' },
-      { label: 'Statement With HAWB', path: '/admin/statement-hawb' },
-      { label: 'Download File', path: '/admin/download-file' },
       { label: 'Change Password', path: '/admin/change-password' },
-      { label: 'Change Invoice No.', path: '/admin/change-invoice' },
-    ],
-  },
-  {
-    label: 'Accounting',
-    adminOnly: true,   // hidden from regular 'user' role
-    items: [
-      { label: 'View Invoice', path: '/accounting/invoice' },
-      { label: 'Statement', path: '/accounting/statement' },
-      { label: 'Mail List', path: '/accounting/mail-list' },
-      { label: 'Master Update', path: '/accounting/master-update' },
-      { label: 'Account Master', path: '/accounting/account-master' },
     ],
   },
 ];
@@ -59,11 +39,14 @@ const Dropdown = ({ items, onClose }: { items: DropdownItem[]; onClose: () => vo
   const navigate = useNavigate();
   return (
     <div className="dropdown-menu">
-      {items.map(item => (
+      {items.map((item) => (
         <span
           key={item.path}
           className="dropdown-item"
-          onClick={() => { navigate(item.path); onClose(); }}
+          onClick={() => {
+            navigate(item.path);
+            onClose();
+          }}
         >
           {item.label}
         </span>
@@ -72,7 +55,7 @@ const Dropdown = ({ items, onClose }: { items: DropdownItem[]; onClose: () => vo
   );
 };
 
-export const Navbar: React.FC = () => {
+const Navbar: React.FC = () => {
   const { user, logout, hasRole, selectedLocation } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,45 +63,57 @@ export const Navbar: React.FC = () => {
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+    const handleClick = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
         setOpenDropdown(null);
       }
     };
+
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const isActive = (path?: string) => path && location.pathname.startsWith(path);
+  const isActive = (path?: string) => Boolean(path && location.pathname.startsWith(path));
 
   return (
     <nav className="navbar" ref={navRef}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
-        <a href="/mawb" className="navbar-brand" onClick={e => { e.preventDefault(); navigate('/mawb'); }}>
-          EDISS
+      <div className="navbar-left">
+        <a
+          href="/mbl"
+          className="navbar-brand"
+          onClick={(event) => {
+            event.preventDefault();
+            navigate('/mbl');
+          }}
+        >
+          EDISS SEA
         </a>
         <ul className="nav-links">
-          {NAV_ITEMS.map(item => {
-            if (item.adminOnly && !hasRole(['master_admin', 'admin'])) return null;
+          {NAV_ITEMS.map((item) => {
+            if (item.adminOnly && !hasRole(['master_admin', 'admin'])) {
+              return null;
+            }
+
             if (item.path) {
               return (
                 <li key={item.label} className="nav-item">
                   <button
                     className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
-                    onClick={() => navigate(item.path!)}
+                    onClick={() => navigate(item.path || '/mbl')}
                   >
                     {item.label}
                   </button>
                 </li>
               );
             }
+
             return (
               <li key={item.label} className="nav-item">
                 <button
                   className="nav-link"
                   onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
                 >
-                  {item.label} <span className="caret">▾</span>
+                  {item.label} <span className="caret">v</span>
                 </button>
                 {openDropdown === item.label && item.items && (
                   <Dropdown items={item.items} onClose={() => setOpenDropdown(null)} />
@@ -128,13 +123,12 @@ export const Navbar: React.FC = () => {
           })}
         </ul>
       </div>
+
       <div className="nav-right">
         <span className="nav-user">
-          {user?.username?.toUpperCase()}
-          {selectedLocation
-            ? ` — ${selectedLocation.city_name || selectedLocation.iata_code}`
-            : ` (${user?.customs_house_code || 'N/A'})`
-          }
+          {(user?.username || 'USER').toUpperCase()}
+          {' · '}
+          {selectedLocation?.customs_house_code || user?.customs_house_code || 'NO-PORT'}
         </span>
         <button className="nav-link" onClick={logout}>Logout</button>
       </div>

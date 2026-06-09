@@ -15,20 +15,22 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+const SEA_USER_KEY = 'sea_ediss_user';
+const SEA_TOKEN_KEY = 'sea_ediss_token';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('ediss_user');
+    const stored = localStorage.getItem(SEA_USER_KEY);
     return stored ? JSON.parse(stored) : null;
   });
   const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem('ediss_token')
+    localStorage.getItem(SEA_TOKEN_KEY)
   );
   // selectedLocation is session-only (not persisted across logins)
   const [selectedLocation, setSelectedLocationState] = useState<Location | null>(null);
   // needsLocationSelect is true whenever user is logged in but hasn't selected location this session
   const [needsLocationSelect, setNeedsLocationSelect] = useState<boolean>(() => {
-    return !!localStorage.getItem('ediss_token');
+    return !!localStorage.getItem(SEA_TOKEN_KEY);
   });
 
   const login = useCallback(async (username: string, password: string) => {
@@ -38,8 +40,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(u);
     setSelectedLocationState(null);
     setNeedsLocationSelect(true); // force location select on every login
-    localStorage.setItem('ediss_token', t);
-    localStorage.setItem('ediss_user', JSON.stringify(u));
+    localStorage.setItem(SEA_TOKEN_KEY, t);
+    localStorage.setItem(SEA_USER_KEY, JSON.stringify(u));
   }, []);
 
   const logout = useCallback(() => {
@@ -47,8 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSelectedLocationState(null);
     setNeedsLocationSelect(false);
-    localStorage.removeItem('ediss_token');
-    localStorage.removeItem('ediss_user');
+    localStorage.removeItem(SEA_TOKEN_KEY);
+    localStorage.removeItem(SEA_USER_KEY);
   }, []);
 
   const setSelectedLocation = useCallback((loc: Location) => {

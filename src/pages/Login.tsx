@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -13,12 +13,16 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) { toast.error('Please enter credentials'); return; }
+    if (!username || !password) {
+      toast.error('Please enter credentials');
+      return;
+    }
+
     setLoading(true);
     try {
       await login(username, password);
-      toast.success('Welcome back!');
-      navigate('/mawb');
+      toast.success('Welcome back');
+      navigate('/mbl');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Login failed');
     } finally {
@@ -27,26 +31,41 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #0369a1 100%)',
-    }}>
-      <div style={{ width: '100%', maxWidth: 400, padding: '0 16px' }}>
-        {/* Logo */}
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'radial-gradient(circle at top left, rgba(80, 170, 255, 0.45), transparent 32%), linear-gradient(135deg, #1834d2 0%, #1229a5 45%, #09104c 100%)',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 420, padding: '0 18px' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 64, height: 64, borderRadius: 16,
-            background: 'rgba(255,255,255,0.2)', marginBottom: 12,
-            fontSize: 28, fontWeight: 800, color: '#fff',
-          }}>E</div>
-          <h1 style={{ color: '#fff', fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>EDISS</h1>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 4 }}>
-            Electronic Data Interchange Shipping System
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 72,
+              height: 72,
+              borderRadius: 20,
+              background: 'rgba(255,255,255,0.18)',
+              marginBottom: 14,
+              fontSize: 30,
+              fontWeight: 800,
+              color: '#fff',
+              boxShadow: '0 18px 50px rgba(0,0,0,0.18)',
+            }}
+          >
+            S
+          </div>
+          <h1 style={{ color: '#fff', fontSize: 30, fontWeight: 800, letterSpacing: -0.6 }}>EDISS SEA</h1>
+          <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: 13, marginTop: 4 }}>
+            Shared login, separate sea database, one-page MBL and HBL workflow
           </p>
         </div>
 
-        {/* Card */}
         <div className="card" style={{ padding: 28 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--text)' }}>Sign In</h2>
           <form onSubmit={handleSubmit}>
@@ -56,7 +75,7 @@ const Login: React.FC = () => {
                 className="form-control"
                 type="text"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter username"
                 autoFocus
               />
@@ -68,22 +87,31 @@ const Login: React.FC = () => {
                   className="form-control"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
-                  style={{ paddingRight: 40 }}
+                  style={{ paddingRight: 72 }}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(v => !v)}
+                  onClick={() => setShowPassword((value) => !value)}
                   style={{
-                    position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--text-muted)', fontSize: 16, padding: 0, lineHeight: 1,
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    fontSize: 12,
+                    padding: 0,
+                    lineHeight: 1,
+                    fontWeight: 700,
                   }}
                   tabIndex={-1}
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? '🙈' : '👁'}
+                  {showPassword ? 'HIDE' : 'SHOW'}
                 </button>
               </div>
             </div>
@@ -98,8 +126,8 @@ const Login: React.FC = () => {
           </form>
         </div>
 
-        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 16 }}>
-          ICES 1.5 Compliant · Indian Customs EDI System
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.64)', fontSize: 12, marginTop: 16 }}>
+          Sea operations console for separate MBL and HBL processing
         </p>
       </div>
     </div>
