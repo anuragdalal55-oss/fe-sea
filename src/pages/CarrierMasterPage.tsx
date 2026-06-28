@@ -36,6 +36,7 @@ const CarrierMasterPage: React.FC = () => {
 
   useEffect(() => {
     fetchCarriers('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetForm = () => {

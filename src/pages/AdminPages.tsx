@@ -347,6 +347,7 @@ export const RegisterProfilePage: React.FC = () => {
   const [locAccessUserId, setLocAccessUserId] = useState('');
   const [locAccessUserName, setLocAccessUserName] = useState('');
   const [locAccessIds, setLocAccessIds] = useState<Set<string>>(new Set());
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [savingAccess, setSavingAccess] = useState(false);
 
   const loadProfiles = (page = 1, userId = '') => {
@@ -387,7 +388,7 @@ export const RegisterProfilePage: React.FC = () => {
     } catch { setAvailableLocations(allLocations); }
   };
 
-  // Load user location access for the access panel
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleLoadAccess = async (userId: string) => {
     setLocAccessUserId(userId);
     const u = users.find(x => x.id === userId);
@@ -399,10 +400,12 @@ export const RegisterProfilePage: React.FC = () => {
     } catch { toast.error('Failed to load location access'); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const toggleLocAccess = (id: string) => setLocAccessIds(prev => {
     const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next;
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const saveLocAccess = async () => {
     if (!locAccessUserId) return;
     setSavingAccess(true);

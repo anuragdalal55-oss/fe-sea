@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
 import Pagination from '../components/Pagination';
@@ -956,6 +956,7 @@ const SeaConsolePage: React.FC = () => {
       loadDetail(editMblId);
       window.history.replaceState({}, '');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routerLocation.state]);
 
   const loadDetail = async (id: string) => {

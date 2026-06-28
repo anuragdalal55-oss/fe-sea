@@ -46,6 +46,7 @@ const SeaMblRegisterPage: React.FC = () => {
   useEffect(() => {
     fetchMbls(1, search);
     setPage(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLocation?.customs_house_code]);
 
   const doSearch = () => {

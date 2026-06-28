@@ -32,6 +32,7 @@ const MloMasterPage: React.FC = () => {
 
   useEffect(() => {
     fetchMlos('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetForm = () => {
