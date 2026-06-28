@@ -15,12 +15,20 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'MBL Console', path: '/mbl' },
+  { label: 'MBL', path: '/mbl-register' },
+  { label: 'New Entry', path: '/mbl' },
   {
     label: 'Masters',
     items: [
       { label: 'Carrier Master', path: '/masters/carriers' },
       { label: 'MLO Master', path: '/masters/mlos' },
+    ],
+  },
+  {
+    label: 'Report',
+    adminOnly: true,
+    items: [
+      { label: 'Pending Statement', path: '/pending-statement' },
     ],
   },
   { label: 'Location', path: '/location' },

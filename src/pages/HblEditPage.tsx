@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
-import { SeaHblForm, SeaHblRecord } from '../types/sea';
+import { SeaContainerRow, SeaHblForm, SeaHblRecord } from '../types/sea';
 import api from '../utils/api';
+
+const CONTAINER_STATUS_OPTIONS = ['FCL', 'LCL'];
+const SOC_FLAG_OPTIONS = ['N-NO', 'Y-YES'];
 
 const toStr = (v: any) => (v === null || v === undefined ? '' : String(v));
 
@@ -30,12 +33,21 @@ const mapRecordToForm = (row: SeaHblRecord): SeaHblForm => ({
   transport: row.transport || '',
   mlo_name: row.mlo_name || '',
   mlo_code: row.mlo_code || '',
-  container_no: row.container_no || '',
-  seal_no: row.seal_no || '',
-  container_size: row.container_size || '',
-  container_type: row.container_type || 'FCL',
-  soc_flag: row.soc_flag || 'N-NO',
-  agent_code: row.agent_code || '',
+  containers: (() => {
+    if (Array.isArray((row as any).containers_json) && (row as any).containers_json.length > 0) {
+      return (row as any).containers_json.map((c: any) => ({
+        container_no: c.container_no || '',
+        seal_no: c.seal_no || '',
+        package_count: String(c.package_count ?? ''),
+        weight: String(c.weight ?? ''),
+        container_size: c.container_size || '',
+        container_type: c.container_type || 'FCL',
+        soc_flag: c.soc_flag || 'N-NO',
+        agent_code: c.agent_code || '',
+      }));
+    }
+    return [{ container_no: row.container_no || '', seal_no: row.seal_no || '', package_count: '', weight: '', container_size: row.container_size || '', container_type: row.container_type || 'FCL', soc_flag: row.soc_flag || 'N-NO', agent_code: row.agent_code || '' }];
+  })(),
   cargo_net_weight: toStr(row.cargo_net_weight),
   volume_cbm: toStr(row.volume_cbm),
   hs_code: row.hs_code || '',
@@ -65,6 +77,28 @@ const HblEditPage: React.FC = () => {
 
   const update = (field: keyof SeaHblForm, value: string) => {
     setForm((current) => current ? { ...current, [field]: value } : current);
+  };
+
+  const updateContainer = (ci: number, field: keyof SeaContainerRow, value: string) => {
+    setForm(cur => {
+      if (!cur) return cur;
+      const containers = cur.containers.map((c, i) => i === ci ? { ...c, [field]: value } : c);
+      return { ...cur, containers };
+    });
+  };
+
+  const addContainer = () => {
+    setForm(cur => {
+      if (!cur) return cur;
+      return { ...cur, containers: [...cur.containers, { container_no: '', seal_no: '', package_count: '', weight: '', container_size: '', container_type: 'FCL', soc_flag: 'N-NO', agent_code: '' }] };
+    });
+  };
+
+  const removeContainer = (ci: number) => {
+    setForm(cur => {
+      if (!cur || cur.containers.length <= 1) return cur;
+      return { ...cur, containers: cur.containers.filter((_, i) => i !== ci) };
+    });
   };
 
   const handleSave = async () => {
@@ -152,61 +186,128 @@ const HblEditPage: React.FC = () => {
                 onChange={(e) => update('hbl_date', e.target.value)}
               />
             </div>
-            <div className="form-group">
-              <label className="form-label">Agent Code</label>
-              <input
-                className="form-control font-mono"
-                value={form.agent_code}
-                onChange={(e) => update('agent_code', e.target.value.toUpperCase())}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">SOC Flag</label>
-              <select
-                className="form-control"
-                value={form.soc_flag}
-                onChange={(e) => update('soc_flag', e.target.value)}
-              >
-                <option value="No">No</option>
-                <option value="Yes">Yes</option>
-              </select>
-            </div>
           </div>
 
-          <div className="sea-section-title">Container</div>
-          <div className="form-row form-row-4">
-            <div className="form-group">
-              <label className="form-label">Container No.</label>
-              <input
-                className="form-control font-mono"
-                value={form.container_no}
-                onChange={(e) => update('container_no', e.target.value.toUpperCase())}
-              />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, marginBottom: 10 }}>
+            <div className="sea-section-title" style={{ margin: 0 }}>
+              Container Details{' '}
+              <span style={{ fontSize: 12, fontWeight: 400, color: '#888' }}>
+                ({form.containers.length} container{form.containers.length !== 1 ? 's' : ''})
+              </span>
             </div>
-            <div className="form-group">
-              <label className="form-label">Seal No.</label>
-              <input
-                className="form-control font-mono"
-                value={form.seal_no}
-                onChange={(e) => update('seal_no', e.target.value.toUpperCase())}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Container Size</label>
-              <input
-                className="form-control"
-                value={form.container_size}
-                onChange={(e) => update('container_size', e.target.value.toUpperCase())}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Container Type</label>
-              <input
-                className="form-control"
-                value={form.container_type}
-                onChange={(e) => update('container_type', e.target.value)}
-              />
-            </div>
+            <button className="btn btn-primary btn-sm" onClick={addContainer}>+ Add Container</button>
+          </div>
+          <div className="table-wrapper">
+            <table className="ef-container-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Container No. <span style={{ fontSize: 10, fontWeight: 400 }}>(4 alpha+7 num)</span></th>
+                  <th>Seal No.</th>
+                  <th>Packages</th>
+                  <th>Weight (Tons)</th>
+                  <th>Container Size</th>
+                  <th>Container Status</th>
+                  <th>SOC Flag</th>
+                  <th>Agent Code</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {form.containers.map((ct, ci) => (
+                  <tr key={ci}>
+                    <td style={{ color: '#888', fontSize: 12, textAlign: 'center' }}>{ci + 1}</td>
+                    <td>
+                      <input
+                        className="form-control ef-table-input font-mono"
+                        value={ct.container_no}
+                        maxLength={11}
+                        placeholder="AAAA1234567"
+                        onChange={(e) => {
+                          const upper = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                          let result = '';
+                          let a = 0, n = 0;
+                          for (let i = 0; i < upper.length && result.length < 11; i++) {
+                            if (a < 4 && /[A-Z]/.test(upper[i])) { result += upper[i]; a++; }
+                            else if (a >= 4 && n < 7 && /[0-9]/.test(upper[i])) { result += upper[i]; n++; }
+                          }
+                          updateContainer(ci, 'container_no', result);
+                        }}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="form-control ef-table-input"
+                        value={ct.seal_no}
+                        onChange={(e) => updateContainer(ci, 'seal_no', e.target.value.toUpperCase())}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="form-control ef-table-input"
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={ct.package_count}
+                        onChange={(e) => updateContainer(ci, 'package_count', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="form-control ef-table-input"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={ct.weight}
+                        onChange={(e) => updateContainer(ci, 'weight', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="form-control ef-table-input"
+                        value={ct.container_size}
+                        onChange={(e) => updateContainer(ci, 'container_size', e.target.value.toUpperCase())}
+                      />
+                    </td>
+                    <td>
+                      <select
+                        className="form-control ef-table-input"
+                        value={ct.container_type}
+                        onChange={(e) => updateContainer(ci, 'container_type', e.target.value)}
+                      >
+                        {CONTAINER_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="form-control ef-table-input"
+                        value={ct.soc_flag}
+                        onChange={(e) => updateContainer(ci, 'soc_flag', e.target.value)}
+                      >
+                        {SOC_FLAG_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        className="form-control ef-table-input"
+                        value={ct.agent_code}
+                        onChange={(e) => updateContainer(ci, 'agent_code', e.target.value.toUpperCase())}
+                      />
+                    </td>
+                    <td>
+                      <button
+                        className="btn-link danger"
+                        onClick={() => removeContainer(ci)}
+                        disabled={form.containers.length <= 1}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           <div className="sea-section-title">Weight and Volume</div>

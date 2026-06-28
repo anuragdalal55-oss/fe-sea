@@ -10,12 +10,15 @@ import {
   RegisterUserPage,
 } from './pages/AdminPages';
 import CarrierMasterPage from './pages/CarrierMasterPage';
+import ChecklistPage from './pages/ChecklistPage';
 import HblEditPage from './pages/HblEditPage';
 import LocationPage from './pages/LocationPage';
 import Login from './pages/Login';
 import MloMasterPage from './pages/MloMasterPage';
+import PendingStatementPage from './pages/PendingStatementPage';
 import { NotFoundPage } from './pages/Placeholders';
 import SeaConsolePage from './pages/SeaConsolePage';
+import SeaMblRegisterPage from './pages/SeaMblRegisterPage';
 import api from './utils/api';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -51,10 +54,13 @@ const AppRoutes: React.FC = () => {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/mbl" replace />} />
-        <Route path="/login" element={<Navigate to="/mbl" replace />} />
+        <Route path="/" element={<Navigate to="/mbl-register" replace />} />
+        <Route path="/login" element={<Navigate to="/mbl-register" replace />} />
+        <Route path="/mbl-register" element={<ProtectedRoute><SeaMblRegisterPage /></ProtectedRoute>} />
         <Route path="/mbl" element={<ProtectedRoute><SeaConsolePage /></ProtectedRoute>} />
         <Route path="/hbl/:id" element={<ProtectedRoute><HblEditPage /></ProtectedRoute>} />
+        <Route path="/checklist/:id" element={<ProtectedRoute><ChecklistPage /></ProtectedRoute>} />
+        <Route path="/pending-statement" element={<ProtectedRoute roles={['master_admin', 'admin']}><PendingStatementPage /></ProtectedRoute>} />
         <Route path="/masters/carriers" element={<ProtectedRoute><CarrierMasterPage /></ProtectedRoute>} />
         <Route path="/masters/mlos" element={<ProtectedRoute><MloMasterPage /></ProtectedRoute>} />
         <Route path="/location" element={<ProtectedRoute><LocationPage /></ProtectedRoute>} />

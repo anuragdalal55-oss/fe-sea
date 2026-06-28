@@ -65,10 +65,6 @@ const CarrierMasterPage: React.FC = () => {
       toast.error('Carrier name is required');
       return;
     }
-    if (!form.carrier_code.trim()) {
-      toast.error('Carrier code is required');
-      return;
-    }
     if (form.address.length > 35) {
       toast.error('Address must be 35 characters or less');
       return;
@@ -154,7 +150,7 @@ const CarrierMasterPage: React.FC = () => {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Carrier Code <span className="required">*</span></label>
+                <label className="form-label">Carrier Code</label>
                 <input
                   className="form-control font-mono"
                   value={form.carrier_code}

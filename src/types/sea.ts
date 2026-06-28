@@ -42,6 +42,7 @@ export interface SeaMblRecord {
   company_name?: string | null;
   status: string;
   hbl_count?: number;
+  tx_count?: number;
   created_at: string;
   updated_at: string;
   hbls?: SeaHblRecord[];
@@ -179,6 +180,17 @@ export interface SeaMblForm {
   mlo_code: string;
 }
 
+export interface SeaContainerRow {
+  container_no: string;
+  seal_no: string;
+  package_count: string;
+  weight: string;
+  container_size: string;
+  container_type: string; // FCL | LCL
+  soc_flag: string; // N-NO | Y-YES
+  agent_code: string;
+}
+
 export interface SeaHblForm {
   // Core HBL
   hbl_no: string;
@@ -205,13 +217,8 @@ export interface SeaHblForm {
   transport: string;
   mlo_name: string;
   mlo_code: string;
-  // Container fields (one container per HBL)
-  container_no: string;
-  seal_no: string;
-  container_size: string;
-  container_type: string;
-  soc_flag: string;
-  agent_code: string;
+  // Multiple containers per HBL
+  containers: SeaContainerRow[];
   // Kept for backward compat / transmission
   cargo_net_weight: string;
   volume_cbm: string;
