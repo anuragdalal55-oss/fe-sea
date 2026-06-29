@@ -572,10 +572,76 @@ const PortSearch: React.FC<{
               style={{ padding: '7px 12px', cursor: 'pointer', fontSize: 12, borderBottom: '1px solid #f0f4ff' }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#f0f4ff'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ''; }}
-              onMouseDown={(e) => { e.preventDefault(); onChange(o.label); setOpen(false); }}
+              onMouseDown={(e) => { e.preventDefault(); onChange(o.code); setOpen(false); }}
             >
               <strong style={{ color: '#1a3fbf' }}>{o.code}</strong>
               <span style={{ color: '#555', marginLeft: 8 }}>{o.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const NameSearch: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  options: Array<{ name: string; code: string }>;
+  placeholder?: string;
+  onSelect?: (name: string, code: string) => void;
+}> = ({ value, onChange, options, placeholder, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = React.useMemo(() => {
+    if (!value) return options.slice(0, 15);
+    const q = value.toUpperCase();
+    return options.filter(
+      (o) => o.name.toUpperCase().includes(q) || o.code.toUpperCase().includes(q)
+    ).slice(0, 20);
+  }, [value, options]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <input
+        className="form-control"
+        value={value}
+        placeholder={placeholder || 'Type to search...'}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          background: '#fff', border: '1px solid #d4dbff', borderRadius: 6,
+          maxHeight: 220, overflowY: 'auto', zIndex: 2000,
+          boxShadow: '0 4px 20px rgba(24,64,242,0.13)',
+        }}>
+          {filtered.map((o) => (
+            <div
+              key={o.code + o.name}
+              style={{ padding: '7px 12px', cursor: 'pointer', fontSize: 12, borderBottom: '1px solid #f0f4ff' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#f0f4ff'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ''; }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(o.name);
+                if (onSelect) onSelect(o.name, o.code);
+                setOpen(false);
+              }}
+            >
+              <strong style={{ color: '#1a3fbf' }}>{o.name}</strong>
+              {o.code && <span style={{ color: '#888', marginLeft: 8, fontSize: 11 }}>{o.code}</span>}
             </div>
           ))}
         </div>
@@ -774,6 +840,14 @@ const createMblForm = (locationCode = '', profileId = ''): SeaMblForm => ({
   mlo_code: '',
 });
 
+const parseContainersJson = (raw: any): any[] | null => {
+  if (Array.isArray(raw)) return raw.length > 0 ? raw : null;
+  if (typeof raw === 'string' && raw.trim()) {
+    try { const parsed = JSON.parse(raw); return Array.isArray(parsed) && parsed.length > 0 ? parsed : null; } catch { return null; }
+  }
+  return null;
+};
+
 const mapHblRecordToForm = (row: any, fallbackMbl?: any): SeaHblForm => ({
   hbl_no: row.hbl_no || '',
   hbl_date: row.hbl_date?.slice(0, 10) || today(),
@@ -799,8 +873,9 @@ const mapHblRecordToForm = (row: any, fallbackMbl?: any): SeaHblForm => ({
   mlo_name: row.mlo_name || fallbackMbl?.mlo_name || '',
   mlo_code: row.mlo_code || fallbackMbl?.mlo_code || '',
   containers: (() => {
-    if (Array.isArray(row.containers_json) && row.containers_json.length > 0) {
-      return row.containers_json.map((c: any) => ({
+    const parsed = parseContainersJson(row.containers_json);
+    if (parsed) {
+      return parsed.map((c: any) => ({
         container_no: c.container_no || '',
         seal_no: c.seal_no || '',
         package_count: String(c.package_count ?? ''),
@@ -1040,12 +1115,44 @@ const SeaConsolePage: React.FC = () => {
         ...form,
         customs_house_code: form.customs_house_code || selectedLocation?.customs_house_code || user?.customs_house_code || '',
         profile_id: form.profile_id || user?.profile_id || '',
-        hbls,
+        hbls: hbls.map(hbl => ({
+          ...hbl,
+          containers: hbl.containers.map(ct => ({
+            container_no: ct.container_no,
+            seal_no: ct.seal_no,
+            package_count: ct.package_count,
+            weight: ct.weight,
+            container_size: ct.container_size,
+            container_type: ct.container_type,
+            soc_flag: ct.soc_flag,
+            agent_code: ct.agent_code,
+          })),
+        })),
       };
       const response = selectedMblId
         ? await api.put(`/sea-mbls/${selectedMblId}`, payload)
         : await api.post('/sea-mbls', payload);
-      applyRecord(response.data);
+
+      // Patch containers_json on each saved HBL via PUT /sea-hbls/:id, which saves
+      // containers directly without going through prepareHblRows (preserves package_count/weight)
+      const savedHbls: any[] = response.data?.hbls ?? [];
+      const patchedHbls = savedHbls.map((savedHbl: any, i: number) => {
+        const formHbl = hbls[i] ?? hbls.find(h => h.hbl_no === savedHbl.hbl_no);
+        if (!formHbl || !savedHbl.id) return savedHbl;
+        const containersPatch = formHbl.containers.map((ct: any) => ({
+          container_no: ct.container_no,
+          seal_no: ct.seal_no,
+          package_count: ct.package_count,
+          weight: ct.weight,
+          container_size: ct.container_size,
+          container_type: ct.container_type,
+          soc_flag: ct.soc_flag,
+          agent_code: ct.agent_code,
+        }));
+        api.put(`/sea-hbls/${savedHbl.id}`, { ...formHbl, containers: containersPatch }).catch(() => {});
+        return { ...savedHbl, containers_json: containersPatch };
+      });
+      applyRecord({ ...response.data, hbls: patchedHbls });
       await fetchMbls(1, pageSize);
       await fetchHistory();
       setPage(1);
@@ -1541,26 +1648,20 @@ const SeaConsolePage: React.FC = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Carrier Name</label>
-                  <select
-                    className="form-control"
+                  <NameSearch
                     value={activeHbl.carrier_name}
-                    onChange={(e) => {
-                      const name = e.target.value;
+                    options={carriers.map((c) => ({ name: c.carrier_name, code: c.carrier_code }))}
+                    placeholder="Type to search carrier..."
+                    onChange={(name) => updateHbl(activeHblTab, 'carrier_name', name)}
+                    onSelect={(name, code) => {
                       const carrier = carriers.find((c) => c.carrier_name === name);
                       updateHbl(activeHblTab, 'carrier_name', name);
-                      if (carrier) {
-                        updateHbl(activeHblTab, 'carrier_code', carrier.carrier_code || '');
-                        if (carrier.bond_number) updateHbl(activeHblTab, 'bond_no', carrier.bond_number);
-                        if (carrier.transport) updateHbl(activeHblTab, 'transport', carrier.transport);
-                        if (carrier.dest) updateHbl(activeHblTab, 'dest_cfs', carrier.dest);
-                      }
+                      updateHbl(activeHblTab, 'carrier_code', code);
+                      if (carrier?.bond_number) updateHbl(activeHblTab, 'bond_no', carrier.bond_number);
+                      if (carrier?.transport) updateHbl(activeHblTab, 'transport', carrier.transport);
+                      if (carrier?.dest) updateHbl(activeHblTab, 'dest_cfs', carrier.dest);
                     }}
-                  >
-                    <option value="">-- Select Carrier --</option>
-                    {carriers.map((c) => (
-                      <option key={c.id} value={c.carrier_name}>{c.carrier_name}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Carrier Code</label>
@@ -1592,39 +1693,31 @@ const SeaConsolePage: React.FC = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">MLO Name</label>
-                  <select
-                    className="form-control"
+                  <NameSearch
                     value={activeHbl.mlo_name}
-                    onChange={(e) => {
-                      const name = e.target.value;
-                      const mlo = mlos.find((m) => m.mlo_name === name);
-                      const mloCode = mlo?.mlo_code || '';
+                    options={mlos.map((m) => ({ name: m.mlo_name, code: m.mlo_code }))}
+                    placeholder="Type to search MLO..."
+                    onChange={(name) => updateHbl(activeHblTab, 'mlo_name', name)}
+                    onSelect={(name, code) => {
                       updateHbl(activeHblTab, 'mlo_name', name);
-                      if (mlo) {
-                        updateHbl(activeHblTab, 'mlo_code', mloCode);
-                        if (mloCode) {
-                          setHbls((prev) =>
-                            prev.map((h, i) =>
-                              i !== activeHblTab
-                                ? h
-                                : {
-                                    ...h,
-                                    containers: h.containers.map((c) => ({
-                                      ...c,
-                                      agent_code: mloCode,
-                                    })),
-                                  }
-                            )
-                          );
-                        }
+                      updateHbl(activeHblTab, 'mlo_code', code);
+                      if (code) {
+                        setHbls((prev) =>
+                          prev.map((h, i) =>
+                            i !== activeHblTab
+                              ? h
+                              : {
+                                  ...h,
+                                  containers: h.containers.map((c) => ({
+                                    ...c,
+                                    agent_code: code,
+                                  })),
+                                }
+                          )
+                        );
                       }
                     }}
-                  >
-                    <option value="">-- Select MLO --</option>
-                    {mlos.map((m) => (
-                      <option key={m.id} value={m.mlo_name}>{m.mlo_name}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">MLO Code</label>

@@ -19,9 +19,11 @@ const SeaMblRegisterPage: React.FC = () => {
   const [pageSize] = useState(15);
   const [total, setTotal] = useState(0);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
-  const [expandedMblId, setExpandedMblId] = useState<string | null>(null);
-  const [hblCache, setHblCache] = useState<Record<string, any[]>>({});
   const [viewMbl, setViewMbl] = useState<SeaMblRecord | null>(null);
+  const [form3Record, setForm3Record] = useState<SeaMblRecord | null>(null);
+  const [form3Hbls, setForm3Hbls] = useState<any[]>([]);
+  const [form3Loading, setForm3Loading] = useState(false);
+  const [form3PanNo, setForm3PanNo] = useState('');
 
   const fetchMbls = useCallback(async (p: number, s: string) => {
     setLoading(true);
@@ -78,16 +80,24 @@ const SeaMblRegisterPage: React.FC = () => {
     }
   };
 
-  const toggleHblList = async (record: SeaMblRecord) => {
-    if (expandedMblId === record.id) { setExpandedMblId(null); return; }
-    setExpandedMblId(record.id);
-    if (!hblCache[record.id]) {
-      try {
-        const resp = await api.get(`/sea-mbls/${record.id}`);
-        setHblCache(prev => ({ ...prev, [record.id]: resp.data.hbls || [] }));
-      } catch {
-        toast.error('Failed to load HBL list');
+  const openForm3 = async (record: SeaMblRecord) => {
+    setForm3Record(record);
+    setForm3Loading(true);
+    setForm3Hbls([]);
+    setForm3PanNo('');
+    try {
+      const resp = await api.get(`/sea-mbls/${record.id}`);
+      setForm3Hbls(resp.data.hbls || []);
+      if (record.profile_id) {
+        try {
+          const profResp = await api.get(`/sea-profiles/${record.profile_id}`);
+          setForm3PanNo(profResp.data?.carn_number || profResp.data?.pan_number || '');
+        } catch { /* profile not available */ }
       }
+    } catch {
+      toast.error('Failed to load Form 3 data');
+    } finally {
+      setForm3Loading(false);
     }
   };
 
@@ -151,15 +161,14 @@ const SeaMblRegisterPage: React.FC = () => {
                   <th>IGM / Voyage</th>
                   <th>Status</th>
                   <th>File</th>
-                  <th>Edit</th>
-                  <th>HBL</th>
+                  <th>Form 3</th>
                   <th>View</th>
                 </tr>
               </thead>
               <tbody>
                 {mbls.flatMap((record, idx) => {
                   const rows: React.ReactNode[] = [
-                    <tr key={record.id} style={{ background: expandedMblId === record.id ? '#f0f5ff' : undefined }}>
+                    <tr key={record.id}>
                       <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{(page - 1) * pageSize + idx + 1}</td>
                       <td>
                         <span className="font-mono" style={{ fontWeight: 800, fontSize: 14, color: 'var(--primary)' }}>
@@ -200,30 +209,12 @@ const SeaMblRegisterPage: React.FC = () => {
                         </div>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <button
-                            className="btn-link"
-                            style={{ color: 'var(--primary)', fontWeight: 700 }}
-                            onClick={() => navigate('/mbl', { state: { editMblId: record.id } })}
-                          >
-                            EDIT
-                          </button>
-                          <button
-                            className="btn-link"
-                            style={{ color: '#475569' }}
-                            onClick={() => navigate('/mbl', { state: { editMblId: record.id } })}
-                          >
-                            Full Edit
-                          </button>
-                        </div>
-                      </td>
-                      <td>
                         <button
-                          className="btn-link"
-                          style={{ color: 'var(--primary)', fontWeight: 600 }}
-                          onClick={() => toggleHblList(record)}
+                          className="btn btn-sm"
+                          style={{ background: '#0f766e', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
+                          onClick={() => openForm3(record)}
                         >
-                          HBL List{record.hbl_count ? ` (${record.hbl_count})` : ''}
+                          Form 3
                         </button>
                       </td>
                       <td>
@@ -238,70 +229,6 @@ const SeaMblRegisterPage: React.FC = () => {
                     </tr>,
                   ];
 
-                  // Expanded HBL list row
-                  if (expandedMblId === record.id) {
-                    rows.push(
-                      <tr key={`${record.id}-hbls`}>
-                        <td colSpan={10} style={{ padding: '0 0 0 32px', background: '#f5f8ff', borderTop: '1px dashed #c5d0ee' }}>
-                          <div style={{ padding: '14px 16px 14px 0' }}>
-                            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, color: 'var(--primary)' }}>
-                              HBL List for {record.mbl_no}
-                            </div>
-                            {!hblCache[record.id] ? (
-                              <div><span className="spinner" /> Loading…</div>
-                            ) : hblCache[record.id].length === 0 ? (
-                              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No HBLs found.</p>
-                            ) : (
-                              <table style={{ fontSize: 12 }}>
-                                <thead>
-                                  <tr>
-                                    <th>#</th>
-                                    <th>HBL No.</th>
-                                    <th>HBL Date</th>
-                                    <th>Importer</th>
-                                    <th>Cargo</th>
-                                    <th>Pkgs</th>
-                                    <th>Gross Wt</th>
-                                    <th>Container No.</th>
-                                    <th>Size/Type</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {hblCache[record.id].map((hbl: any, hi: number) => {
-                                    const containers: any[] = Array.isArray(hbl.containers_json) && hbl.containers_json.length > 0
-                                      ? hbl.containers_json
-                                      : (hbl.container_no ? [{ container_no: hbl.container_no, container_size: hbl.container_size, container_type: hbl.container_type }] : []);
-                                    return (
-                                      <tr key={hbl.id}>
-                                        <td style={{ color: 'var(--text-muted)' }}>{hi + 1}</td>
-                                        <td className="font-mono" style={{ fontWeight: 700 }}>{hbl.hbl_no}</td>
-                                        <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(hbl.hbl_date)}</td>
-                                        <td>{hbl.importer_name || '—'}</td>
-                                        <td>{hbl.cargo_description || '—'}</td>
-                                        <td>{hbl.package_count} {hbl.package_type || ''}</td>
-                                        <td>{Number(hbl.gross_weight || 0).toFixed(3)} KG</td>
-                                        <td>
-                                          {containers.length === 0 ? '—' : containers.map((c, ci) => (
-                                            <div key={ci} className="font-mono" style={{ fontSize: 11 }}>{c.container_no || '—'}</div>
-                                          ))}
-                                        </td>
-                                        <td>
-                                          {containers.length === 0 ? '—' : containers.map((c, ci) => (
-                                            <div key={ci} style={{ fontSize: 11 }}>{[c.container_size, c.container_type].filter(Boolean).join(' / ') || '—'}</div>
-                                          ))}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }
-
                   return rows;
                 })}
               </tbody>
@@ -315,6 +242,131 @@ const SeaMblRegisterPage: React.FC = () => {
           onPage={(p) => { setPage(p); fetchMbls(p, search); }}
         />
       </div>
+
+      {/* ── Form 3 Overlay ── */}
+      {form3Record && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 9999, overflowY: 'auto' }}>
+          <style>{`@media print { .f3-noprint { display: none !important; } @page { margin: 12mm; } }`}</style>
+
+          {/* Toolbar */}
+          <div className="f3-noprint" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', borderBottom: '2px solid #1a3fbf', background: '#f0f4ff' }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setForm3Record(null)}>← Back</button>
+            <button className="btn btn-primary btn-sm" onClick={() => window.print()}>Print</button>
+            <span style={{ fontWeight: 700, fontSize: 14, color: '#1a3fbf' }}>
+              Form 3 — Pending Statement — {form3Record.mbl_no}
+            </span>
+          </div>
+
+          {form3Loading ? (
+            <div style={{ textAlign: 'center', padding: 60 }}><span className="spinner" /> Loading…</div>
+          ) : (
+            <div style={{ maxWidth: 1120, margin: '0 auto', padding: '24px 24px 48px' }}>
+
+              {/* Title */}
+              <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                <div style={{ fontSize: 17, fontWeight: 800, textDecoration: 'underline', letterSpacing: 1 }}>Pending Statement</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>CARGO DECLARATION</div>
+                <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>(See Regulation 3 &amp; 4)</div>
+              </div>
+
+              {/* Header info grid */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 18, border: '1px solid #333', fontSize: 12 }}>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Igm No:</strong> {form3Record.igm_no || '—'}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Igm Date:</strong> {fmtDate(form3Record.igm_date)}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Imo Code:</strong> {form3Record.imo_code || '—'}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Vessel Code:</strong> {form3Record.vessel_code || '—'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Voyage No:</strong> {form3Record.vessel_voyage_no || '—'}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Line:</strong> {form3Record.line_no || '—'}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Mbl No:</strong> {form3Record.mbl_no}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Mbl Date:</strong> {fmtDate(form3Record.mbl_date)}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Pan No:</strong> {form3PanNo || '—'}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Port Code:</strong> {form3Record.port_of_loading || '—'}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Shipping Line:</strong> {form3Record.shipping_line || '—'}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Cargo table */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                <thead>
+                  <tr style={{ background: '#e8ecf8' }}>
+                    {['Line No', 'BL No / Date', 'Packages', 'Mark & Number', 'Gross Wt. (Kg)', 'Description', 'CFS Code', 'Importer', 'Container Details'].map(h => (
+                      <th key={h} style={{ padding: '7px 8px', border: '1px solid #666', fontWeight: 700, textAlign: 'left', fontSize: 11 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {form3Hbls.length === 0 ? (
+                    <tr><td colSpan={9} style={{ padding: 20, textAlign: 'center', color: '#888' }}>No HBL records found.</td></tr>
+                  ) : form3Hbls.map((hbl: any, i: number) => {
+                    const containers: any[] = Array.isArray(hbl.containers_json) && hbl.containers_json.length > 0
+                      ? hbl.containers_json
+                      : (hbl.container_no ? [{
+                          container_no: hbl.container_no, seal_no: hbl.seal_no,
+                          container_type: hbl.container_type, container_size: hbl.container_size,
+                          agent_code: hbl.agent_code, package_count: hbl.package_count, weight: hbl.gross_weight,
+                        }] : []);
+                    const tdStyle: React.CSSProperties = { padding: '8px 8px', border: '1px solid #aaa', verticalAlign: 'top', fontSize: 11 };
+                    return (
+                      <tr key={hbl.id} style={{ borderBottom: '1px solid #bbb' }}>
+                        <td style={tdStyle}>
+                          <div>{form3Record.line_no || '—'}</div>
+                          <div style={{ color: '#666', fontSize: 10 }}>{hbl.subline_no || (i + 1)}</div>
+                        </td>
+                        <td style={tdStyle}>
+                          <div style={{ fontWeight: 700, fontFamily: 'monospace' }}>{hbl.hbl_no}</div>
+                          <div style={{ color: '#555', marginTop: 2 }}>{fmtDate(hbl.hbl_date)}</div>
+                        </td>
+                        <td style={tdStyle}>
+                          <div>{hbl.package_count || 0}</div>
+                          {hbl.package_type && <div style={{ color: '#555' }}>{hbl.package_type}</div>}
+                        </td>
+                        <td style={tdStyle}>{hbl.marks_numbers || '—'}</td>
+                        <td style={tdStyle}>{Number(hbl.gross_weight || 0).toFixed(0)} KGS</td>
+                        <td style={{ ...tdStyle, maxWidth: 180 }}>{hbl.cargo_description || '—'}</td>
+                        <td style={tdStyle}>{hbl.dest_cfs || '—'}</td>
+                        <td style={tdStyle}>
+                          <div style={{ fontWeight: 600 }}>{hbl.importer_name || '—'}</div>
+                          {[hbl.importer_address1, hbl.importer_address2, hbl.importer_address3].filter(Boolean).map((a: string, ai: number) => (
+                            <div key={ai} style={{ fontSize: 10, color: '#555' }}>{a}</div>
+                          ))}
+                        </td>
+                        <td style={tdStyle}>
+                          {containers.map((ct: any, ci: number) => (
+                            <div key={ci} style={{
+                              paddingBottom: ci < containers.length - 1 ? 8 : 0,
+                              marginBottom: ci < containers.length - 1 ? 8 : 0,
+                              borderBottom: ci < containers.length - 1 ? '1px solid #ccc' : 'none',
+                            }}>
+                              <div style={{ fontWeight: 600 }}>{ct.agent_code || '—'}</div>
+                              <div style={{ fontFamily: 'monospace', fontSize: 11 }}>{ct.container_no || '—'}</div>
+                              <div>{ct.seal_no || '—'}</div>
+                              <div>{ct.container_type || 'FCL'}</div>
+                              <div>{ct.package_count || 0}</div>
+                              <div>{ct.weight ? `${(Number(ct.weight) / 1000).toFixed(2)} Tons` : '—'}</div>
+                            </div>
+                          ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div className="f3-noprint" style={{ marginTop: 28, textAlign: 'center' }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => window.print()}>Print Page</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── View Modal ── */}
       {viewMbl && (

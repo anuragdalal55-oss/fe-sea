@@ -9,6 +9,14 @@ const SOC_FLAG_OPTIONS = ['N-NO', 'Y-YES'];
 
 const toStr = (v: any) => (v === null || v === undefined ? '' : String(v));
 
+const parseContainersJson = (raw: any): any[] | null => {
+  if (Array.isArray(raw)) return raw.length > 0 ? raw : null;
+  if (typeof raw === 'string' && raw.trim()) {
+    try { const parsed = JSON.parse(raw); return Array.isArray(parsed) && parsed.length > 0 ? parsed : null; } catch { return null; }
+  }
+  return null;
+};
+
 const mapRecordToForm = (row: SeaHblRecord): SeaHblForm => ({
   hbl_no: row.hbl_no || '',
   hbl_date: row.hbl_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
@@ -34,8 +42,9 @@ const mapRecordToForm = (row: SeaHblRecord): SeaHblForm => ({
   mlo_name: row.mlo_name || '',
   mlo_code: row.mlo_code || '',
   containers: (() => {
-    if (Array.isArray((row as any).containers_json) && (row as any).containers_json.length > 0) {
-      return (row as any).containers_json.map((c: any) => ({
+    const parsed = parseContainersJson((row as any).containers_json);
+    if (parsed) {
+      return parsed.map((c: any) => ({
         container_no: c.container_no || '',
         seal_no: c.seal_no || '',
         package_count: String(c.package_count ?? ''),
@@ -111,7 +120,20 @@ const HblEditPage: React.FC = () => {
 
     setSaving(true);
     try {
-      const res = await api.put(`/sea-hbls/${id}`, form);
+      const payload = {
+        ...form,
+        containers: form.containers.map(ct => ({
+          container_no: ct.container_no,
+          seal_no: ct.seal_no,
+          package_count: ct.package_count,
+          weight: ct.weight,
+          container_size: ct.container_size,
+          container_type: ct.container_type,
+          soc_flag: ct.soc_flag,
+          agent_code: ct.agent_code,
+        })),
+      };
+      const res = await api.put(`/sea-hbls/${id}`, payload);
       setRecord(res.data);
       setForm(mapRecordToForm(res.data));
       toast.success('HBL updated');
