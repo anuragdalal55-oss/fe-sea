@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://sea-be.onrender.com/api'
+
+const BASE_URL = window.location.href.includes('localhost') ? 'http://localhost:5100/api' : 'https://sea-be.onrender.com/api'
 
 const api = axios.create({
   baseURL: BASE_URL,
