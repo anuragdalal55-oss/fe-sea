@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { SeaContainerRow, SeaHblForm, SeaHblRecord } from '../types/sea';
 import api from '../utils/api';
 
+import DateInput from '../components/DateInput';
 const CONTAINER_STATUS_OPTIONS = ['FCL', 'LCL'];
 const SOC_FLAG_OPTIONS = ['N-NO', 'Y-YES'];
 
@@ -201,9 +202,8 @@ const HblEditPage: React.FC = () => {
             </div>
             <div className="form-group">
               <label className="form-label">HBL Date</label>
-              <input
+              <DateInput
                 className="form-control"
-                type="date"
                 value={form.hbl_date}
                 onChange={(e) => update('hbl_date', e.target.value)}
               />

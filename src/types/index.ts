@@ -50,6 +50,9 @@ export interface Profile {
   sea_consol_fcl_rate?: number;
   air_manifest_rate?: number;
   air_manifest_min_bill?: number;
+  monthly_rate?: number;
+  per_mbl_rate?: number;
+  per_hbl_rate?: number;
   location_code?: string;
   created_at: string;
 }
@@ -347,8 +350,8 @@ export interface Invoice {
   id: string;
   invoice_no: string;
   invoice_date: string;
-  mawb_no?: string;
-  hawb_no?: string;
+  mbl_no?: string;
+  hbl_no?: string;
   consignee_name?: string;
   amount: number;
   currency: string;
@@ -356,4 +359,58 @@ export interface Invoice {
   status: string;
   created_by_name?: string;
   created_at: string;
+}
+
+export interface SeaInvoiceBuyer {
+  company_name?: string;
+  address1?: string;
+  address2?: string;
+  billing_state?: string;
+  gstin?: string;
+  email?: string;
+}
+
+export interface SeaInvoiceSupplier {
+  name: string;
+  addressLines: string[];
+  mobile: string;
+  gstin: string;
+  email: string;
+}
+
+export interface SeaInvoiceBank {
+  accountName: string;
+  accountNo: string;
+  ifsc: string;
+  branch: string;
+}
+
+export interface SeaInvoiceCalc {
+  id?: string;
+  invoice_no?: string;
+  suggested_invoice_no?: string;
+  invoice_date: string;
+  period_from: string;
+  period_to: string;
+  profile_id?: string;
+  rateType?: 'monthly' | 'mbl' | 'hbl';
+  rate_type?: 'monthly' | 'mbl' | 'hbl';
+  quantity: number;
+  rate: number;
+  description: string;
+  taxableAmount?: number;
+  taxable_amount?: number;
+  gstRate?: number;
+  gst_rate?: number;
+  gstAmount?: number;
+  gst_amount?: number;
+  roundOff?: number;
+  round_off?: number;
+  total?: number;
+  total_amount?: number;
+  buyer: SeaInvoiceBuyer;
+  supplier: SeaInvoiceSupplier;
+  bank: SeaInvoiceBank;
+  sac_code: string;
+  amount_in_words: string;
 }

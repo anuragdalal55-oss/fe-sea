@@ -16,12 +16,14 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'MBL', path: '/mbl-register' },
-  { label: 'New Entry', path: '/mbl' },
+  // { label: 'New Entry', path: '/mbl' },
   {
     label: 'Masters',
     items: [
       { label: 'Carrier Master', path: '/masters/carriers' },
       { label: 'MLO Master', path: '/masters/mlos' },
+      { label: 'Loading Port Master', path: '/masters/loading-ports' },
+      { label: 'Delivery Port Master', path: '/masters/delivery-ports' },
     ],
   },
   {
@@ -39,6 +41,13 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Register User', path: '/admin/register-user' },
       { label: 'Register Profile', path: '/admin/register-profile' },
       { label: 'Change Password', path: '/admin/change-password' },
+    ],
+  },
+  {
+    label: 'Accounting',
+    adminOnly: true,
+    items: [
+      { label: 'View Invoice', path: '/accounting/invoice' },
     ],
   },
 ];

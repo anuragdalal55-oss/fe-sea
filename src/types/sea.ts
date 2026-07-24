@@ -129,6 +129,19 @@ export interface SeaMloForm {
   agent_code: string;
 }
 
+export interface SeaPortRecord {
+  id: string;
+  port_code: string;
+  port_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SeaPortForm {
+  port_code: string;
+  port_name: string;
+}
+
 export interface SeaTransmissionRecord {
   id: string;
   file_name: string;

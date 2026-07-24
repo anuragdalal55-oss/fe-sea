@@ -9,9 +9,12 @@ import {
   RegisterProfilePage,
   RegisterUserPage,
 } from './pages/AdminPages';
+import AccountingPage from './pages/AccountingPage';
 import CarrierMasterPage from './pages/CarrierMasterPage';
 import ChecklistPage from './pages/ChecklistPage';
+import DeliveryPortMasterPage from './pages/DeliveryPortMasterPage';
 import HblEditPage from './pages/HblEditPage';
+import LoadingPortMasterPage from './pages/LoadingPortMasterPage';
 import LocationPage from './pages/LocationPage';
 import Login from './pages/Login';
 import MloMasterPage from './pages/MloMasterPage';
@@ -20,6 +23,7 @@ import { NotFoundPage } from './pages/Placeholders';
 import SeaConsolePage from './pages/SeaConsolePage';
 import SeaMblRegisterPage from './pages/SeaMblRegisterPage';
 import api from './utils/api';
+import { initAutoOpenDatePicker } from './utils/autoOpenDatePicker';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <>
@@ -63,11 +67,14 @@ const AppRoutes: React.FC = () => {
         <Route path="/pending-statement" element={<ProtectedRoute roles={['master_admin', 'admin']}><PendingStatementPage /></ProtectedRoute>} />
         <Route path="/masters/carriers" element={<ProtectedRoute><CarrierMasterPage /></ProtectedRoute>} />
         <Route path="/masters/mlos" element={<ProtectedRoute><MloMasterPage /></ProtectedRoute>} />
+        <Route path="/masters/loading-ports" element={<ProtectedRoute><LoadingPortMasterPage /></ProtectedRoute>} />
+        <Route path="/masters/delivery-ports" element={<ProtectedRoute><DeliveryPortMasterPage /></ProtectedRoute>} />
         <Route path="/location" element={<ProtectedRoute><LocationPage /></ProtectedRoute>} />
         <Route path="/admin/register-user" element={<ProtectedRoute roles={['master_admin', 'admin']}><RegisterUserPage /></ProtectedRoute>} />
         <Route path="/admin/register-profile" element={<ProtectedRoute roles={['master_admin', 'admin']}><RegisterProfilePage /></ProtectedRoute>} />
         <Route path="/admin/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
         <Route path="/admin/*" element={<ProtectedRoute roles={['master_admin', 'admin']}><NotFoundPage /></ProtectedRoute>} />
+        <Route path="/accounting/*" element={<ProtectedRoute roles={['master_admin', 'admin']}><AccountingPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppLayout>
@@ -85,6 +92,7 @@ const useKeepAlive = () => {
 
 const App: React.FC = () => {
   useKeepAlive();
+  useEffect(() => initAutoOpenDatePicker(), []);
 
   return (
     <BrowserRouter>

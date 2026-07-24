@@ -161,7 +161,7 @@ const SeaMblRegisterPage: React.FC = () => {
                   <th>IGM / Voyage</th>
                   <th>Status</th>
                   <th>File</th>
-                  <th>Form 3</th>
+                  <th>Checklist / Form 3</th>
                   <th>View</th>
                 </tr>
               </thead>
@@ -192,6 +192,12 @@ const SeaMblRegisterPage: React.FC = () => {
                       <td style={{ whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                           <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={(e) => { e.stopPropagation(); navigate('/mbl', { state: { editMblId: record.id } }); }}
+                          >
+                            Edit
+                          </button>
+                          <button
                             className="btn btn-primary btn-sm"
                             disabled={generatingId === record.id}
                             onClick={(e) => handleDownload(record, e)}
@@ -208,14 +214,23 @@ const SeaMblRegisterPage: React.FC = () => {
                           </button>
                         </div>
                       </td>
-                      <td>
-                        <button
-                          className="btn btn-sm"
-                          style={{ background: '#0f766e', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
-                          onClick={() => openForm3(record)}
-                        >
-                          Form 3
-                        </button>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          <button
+                            className="btn btn-sm"
+                            style={{ background: '#334155', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
+                            onClick={() => navigate(`/checklist/${record.id}`)}
+                          >
+                            Checklist
+                          </button>
+                          <button
+                            className="btn btn-sm"
+                            style={{ background: '#0f766e', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
+                            onClick={() => openForm3(record)}
+                          >
+                            Form 3
+                          </button>
+                        </div>
                       </td>
                       <td>
                         <button
@@ -264,7 +279,6 @@ const SeaMblRegisterPage: React.FC = () => {
 
               {/* Title */}
               <div style={{ textAlign: 'center', marginBottom: 18 }}>
-                <div style={{ fontSize: 17, fontWeight: 800, textDecoration: 'underline', letterSpacing: 1 }}>Pending Statement</div>
                 <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>CARGO DECLARATION</div>
                 <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>(See Regulation 3 &amp; 4)</div>
               </div>

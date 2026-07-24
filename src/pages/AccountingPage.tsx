@@ -4,12 +4,15 @@ import api from '../utils/api';
 import { Invoice } from '../types';
 import toast from 'react-hot-toast';
 import { fmtDate } from '../utils/dateUtils';
+import { useAuth } from '../hooks/useAuth';
+import SeaInvoicePage from './SeaInvoicePage';
 
+import DateInput from '../components/DateInput';
 const emptyForm = {
   invoice_no: '',
   invoice_date: '',
-  mawb_no: '',
-  hawb_no: '',
+  mbl_no: '',
+  hbl_no: '',
   consignee_name: '',
   amount: '',
   currency: 'INR',
@@ -51,8 +54,8 @@ const InvoicePage: React.FC = () => {
     setForm({
       invoice_no: inv.invoice_no,
       invoice_date: inv.invoice_date ? inv.invoice_date.split('T')[0] : '',
-      mawb_no: inv.mawb_no || '',
-      hawb_no: inv.hawb_no || '',
+      mbl_no: inv.mbl_no || '',
+      hbl_no: inv.hbl_no || '',
       consignee_name: inv.consignee_name || '',
       amount: String(inv.amount),
       currency: inv.currency,
@@ -129,8 +132,8 @@ const InvoicePage: React.FC = () => {
                 <th>#</th>
                 <th>Invoice No.</th>
                 <th>Date</th>
-                <th>MAWB No.</th>
-                <th>HAWB No.</th>
+                <th>MBL No.</th>
+                <th>HBL No.</th>
                 <th>Consignee</th>
                 <th>Amount</th>
                 <th>Currency</th>
@@ -149,8 +152,8 @@ const InvoicePage: React.FC = () => {
                   <td className="text-muted text-sm">{i + 1}</td>
                   <td className="font-mono" style={{ fontWeight: 600 }}>{r.invoice_no}</td>
                   <td className="text-sm">{r.invoice_date ? fmtDate(r.invoice_date) : '—'}</td>
-                  <td className="font-mono">{r.mawb_no || '—'}</td>
-                  <td className="font-mono">{r.hawb_no || '—'}</td>
+                  <td className="font-mono">{r.mbl_no || '—'}</td>
+                  <td className="font-mono">{r.hbl_no || '—'}</td>
                   <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.consignee_name || '—'}</td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>{Number(r.amount).toFixed(2)}</td>
                   <td className="font-mono text-sm">{r.currency}</td>
@@ -190,17 +193,17 @@ const InvoicePage: React.FC = () => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Date <span className="required">*</span></label>
-                    <input className="form-control" type="date" value={form.invoice_date} onChange={e => f('invoice_date', e.target.value)} />
+                    <DateInput className="form-control" value={form.invoice_date} onChange={e => f('invoice_date', e.target.value)} />
                   </div>
                 </div>
                 <div className="form-row form-row-2">
                   <div className="form-group">
-                    <label className="form-label">MAWB No.</label>
-                    <input className="form-control font-mono" value={form.mawb_no} onChange={e => f('mawb_no', e.target.value)} />
+                    <label className="form-label">MBL No.</label>
+                    <input className="form-control font-mono" value={form.mbl_no} onChange={e => f('mbl_no', e.target.value)} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">HAWB No.</label>
-                    <input className="form-control font-mono" value={form.hawb_no} onChange={e => f('hawb_no', e.target.value)} />
+                    <label className="form-label">HBL No.</label>
+                    <input className="form-control font-mono" value={form.hbl_no} onChange={e => f('hbl_no', e.target.value)} />
                   </div>
                 </div>
                 <div className="form-group">
@@ -253,11 +256,14 @@ const InvoicePage: React.FC = () => {
 const AccountingPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole(['master_admin', 'admin']);
 
   const subPath = location.pathname.replace('/accounting', '').replace(/^\//, '') || 'invoice';
 
   const tabs = [
     { key: 'invoice', label: 'View Invoice', path: '/accounting/invoice' },
+    ...(isAdmin ? [{ key: 'generate', label: 'Generate Invoice', path: '/accounting/generate' }] : []),
   ];
 
   return (
@@ -285,12 +291,14 @@ const AccountingPage: React.FC = () => {
         ))}
       </div>
 
-      {(subPath === 'invoice' || subPath === '') ? <InvoicePage /> : (
-        <div className="empty-state" style={{ padding: 60 }}>
-          <div className="empty-state-title">Coming Soon</div>
-          <p className="text-muted">This accounting sub-module will be available in a future update.</p>
-        </div>
-      )}
+      {(subPath === 'invoice' || subPath === '') ? <InvoicePage />
+        : subPath === 'generate' && isAdmin ? <SeaInvoicePage />
+        : (
+          <div className="empty-state" style={{ padding: 60 }}>
+            <div className="empty-state-title">Coming Soon</div>
+            <p className="text-muted">This accounting sub-module will be available in a future update.</p>
+          </div>
+        )}
     </div>
   );
 };

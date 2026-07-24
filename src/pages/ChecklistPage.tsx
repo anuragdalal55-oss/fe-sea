@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SeaMblRecord } from '../types/sea';
 import { fmtDate } from '../utils/dateUtils';
+import { formatWeight } from '../utils/numberUtils';
 import api from '../utils/api';
 
 const ChecklistPage: React.FC = () => {
@@ -156,9 +157,6 @@ const ChecklistPage: React.FC = () => {
             }];
           })();
 
-          const totalContainerPkgs = containers.reduce((s: number, c: any) => s + (Number(c.package_count) || 0), 0);
-          const totalContainerWt = containers.reduce((s: number, c: any) => s + (Number(c.weight) || 0), 0);
-
           return (
             <div key={hbl.id || hi} style={{ border: '1px solid #ccc', marginBottom: 24, fontFamily: 'Arial, sans-serif' }}>
               <h2 style={{ textAlign: 'center', fontSize: 18, padding: '10px 0', borderBottom: '1px solid #ccc', margin: 0, background: '#fafafa' }}>
@@ -191,7 +189,7 @@ const ChecklistPage: React.FC = () => {
                       Packages: <span style={{ fontWeight: 'normal' }}>{hbl.package_count} {hbl.package_type || 'PKG'}</span>
                     </td>
                     <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold' }}>
-                      Gross Weight:: <span style={{ fontWeight: 'normal' }}>{hbl.gross_weight} KGS</span>
+                      Gross Weight:: <span style={{ fontWeight: 'normal' }}>{formatWeight(hbl.gross_weight)} KGS</span>
                       &nbsp;&nbsp; Cargo Movement: <span style={{ fontWeight: 'normal' }}>{(hbl.cargo_move || '').split('-')[0]}</span>
                     </td>
                   </tr>
@@ -236,7 +234,7 @@ const ChecklistPage: React.FC = () => {
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px', fontFamily: 'monospace' }}>{ct.container_no || '—'}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.seal_no || '—'}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.package_count || '—'}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.weight ? Number(ct.weight).toFixed(2) : '—'}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.weight ? formatWeight(ct.weight) : '—'}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.container_size || '—'}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{(ct.container_type || '').split('-')[0]}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{(ct.soc_flag || '').split('-')[0]}</td>
@@ -245,32 +243,49 @@ const ChecklistPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-
-              {/* HBL Totals */}
-              <div style={{ borderTop: '2px solid #ccc', marginTop: 4 }}>
-                <h3 style={{ textAlign: 'center', fontSize: 16, padding: '8px 0', margin: 0, background: '#fafafa' }}>Total</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <tbody>
-                    <tr>
-                      <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
-                        HBL Packages: <span style={{ fontWeight: 'normal' }}>{hbl.package_count}</span>
-                      </td>
-                      <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
-                        HBL Weight: <span style={{ fontWeight: 'normal' }}>{hbl.gross_weight}</span>
-                      </td>
-                      <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
-                        Container Pkgs: <span style={{ fontWeight: 'normal' }}>{totalContainerPkgs || '—'}</span>
-                      </td>
-                      <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
-                        Container Weight: <span style={{ fontWeight: 'normal' }}>{totalContainerWt ? totalContainerWt.toFixed(2) : '—'}</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
             </div>
           );
         })}
+
+        {/* Grand Total — across all HBLs/Containers on this MBL */}
+        {hbls.length > 0 && (() => {
+          const grandHblPkgs = hbls.reduce((s, h) => s + (Number(h.package_count) || 0), 0);
+          const grandHblWt = hbls.reduce((s, h) => s + (Number(h.gross_weight) || 0), 0);
+          const allContainers = hbls.flatMap(h => {
+            if ((h as any).containers_json && Array.isArray((h as any).containers_json)) {
+              return (h as any).containers_json;
+            }
+            return [{ package_count: '', weight: '' }];
+          });
+          const grandContainerPkgs = allContainers.reduce((s: number, c: any) => s + (Number(c.package_count) || 0), 0);
+          const grandContainerWt = allContainers.reduce((s: number, c: any) => s + (Number(c.weight) || 0), 0);
+
+          return (
+            <div style={{ border: '1px solid #ccc', marginBottom: 24, fontFamily: 'Arial, sans-serif' }}>
+              <h2 style={{ textAlign: 'center', fontSize: 18, padding: '10px 0', borderBottom: '1px solid #ccc', margin: 0, background: '#fafafa' }}>
+                Total
+              </h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <tbody>
+                  <tr>
+                    <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
+                      HBL Packages: <span style={{ fontWeight: 'normal' }}>{grandHblPkgs || '—'}</span>
+                    </td>
+                    <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
+                      HBL Weight: <span style={{ fontWeight: 'normal' }}>{grandHblWt ? formatWeight(grandHblWt) : '—'}</span>
+                    </td>
+                    <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
+                      Container Pkgs: <span style={{ fontWeight: 'normal' }}>{grandContainerPkgs || '—'}</span>
+                    </td>
+                    <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
+                      Container Weight: <span style={{ fontWeight: 'normal' }}>{grandContainerWt ? formatWeight(grandContainerWt) : '—'}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
 
         {/* Print button inside printable area (visible on screen only) */}
         <div style={{ textAlign: 'center', padding: '20px 0' }} className="print-btn">

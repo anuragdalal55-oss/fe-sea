@@ -40,7 +40,7 @@ const LocationPage: React.FC = () => {
     }
     setSelectedLocation(location);
     toast.success(`Port set to ${location.city_name} (${location.customs_house_code})`);
-    navigate('/mbl');
+    navigate('/mbl-register');
   };
 
   const selectedPort = locations.find((item) => item.customs_house_code === sessionCode);
@@ -53,7 +53,7 @@ const LocationPage: React.FC = () => {
           <p className="page-subtitle">Choose the sea customs location you want to work with in this session</p>
         </div>
         {selectedLocation && (
-          <button className="btn btn-secondary" onClick={() => navigate('/mbl')}>
+          <button className="btn btn-secondary" onClick={() => navigate('/mbl-register')}>
             Back to Console
           </button>
         )}

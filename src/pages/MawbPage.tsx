@@ -8,6 +8,7 @@ import { fmtDateTime } from '../utils/dateUtils';
 import Pagination from '../components/Pagination';
 import { isSignerRunning, signCgmContent, downloadSignedCgm, SIGNER_SETUP_MSG } from '../utils/localSigner';
 
+import DateInput from '../components/DateInput';
 type ModalMode = 'add' | 'edit' | 'part' | 'amend' | 'delete-confirm' | null;
 
 const emptyForm: MawbForm = {
@@ -794,7 +795,7 @@ const MawbPage: React.FC = () => {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Flight Date</label>
-                      <input className="form-control" type="date" value={form.flight_origin_date} onChange={e => f('flight_origin_date', e.target.value)} />
+                      <DateInput className="form-control" value={form.flight_origin_date} onChange={e => f('flight_origin_date', e.target.value)} />
                     </div>
                   </div>
                   <div className="form-row form-row-2">
@@ -804,7 +805,7 @@ const MawbPage: React.FC = () => {
                     </div>
                     <div className="form-group">
                       <label className="form-label">IGM Date</label>
-                      <input className="form-control" type="date" value={form.igm_date} onChange={e => f('igm_date', e.target.value)} />
+                      <DateInput className="form-control" value={form.igm_date} onChange={e => f('igm_date', e.target.value)} />
                     </div>
                   </div>
                 </>
@@ -851,7 +852,7 @@ const MawbPage: React.FC = () => {
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Flight Date</label>
-                    <input className="form-control" type="date" value={form.flight_origin_date} onChange={e => f('flight_origin_date', e.target.value)} />
+                    <DateInput className="form-control" value={form.flight_origin_date} onChange={e => f('flight_origin_date', e.target.value)} />
                   </div>
                 </div>
                 <div className="form-row form-row-2">
@@ -861,7 +862,7 @@ const MawbPage: React.FC = () => {
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">IGM Date</label>
-                    <input className="form-control" type="date" value={form.igm_date} onChange={e => f('igm_date', e.target.value)} />
+                    <DateInput className="form-control" value={form.igm_date} onChange={e => f('igm_date', e.target.value)} />
                   </div>
                 </div>
               </div>
