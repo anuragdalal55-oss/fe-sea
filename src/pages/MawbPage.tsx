@@ -9,6 +9,7 @@ import Pagination from '../components/Pagination';
 import { isSignerRunning, signCgmContent, downloadSignedCgm, SIGNER_SETUP_MSG } from '../utils/localSigner';
 
 import DateInput from '../components/DateInput';
+import TextInput from '../components/TextInput';
 type ModalMode = 'add' | 'edit' | 'part' | 'amend' | 'delete-confirm' | null;
 
 const emptyForm: MawbForm = {
@@ -743,7 +744,7 @@ const MawbPage: React.FC = () => {
                                   />
                                 </td>
                                 <td>
-                                  <input
+                                  <TextInput
                                     className="form-control"
                                     value={row.item_description}
                                     onChange={e => updateInlineHawbRow(index, 'item_description', e.target.value.replace(/[^a-zA-Z0-9 .,\-/]/g, ''))}

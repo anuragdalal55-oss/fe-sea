@@ -5,7 +5,9 @@ import { Hawb, HawbForm, Mawb } from '../types';
 import toast from 'react-hot-toast';
 import { fmtDateTime } from '../utils/dateUtils';
 import Pagination from '../components/Pagination';
+import TextInput from '../components/TextInput';
 import { useAuth } from '../hooks/useAuth';
+import { sanitizeFreeText } from '../utils/textSanitize';
 
 interface HawbPageProps {
   initialMode?: string;
@@ -157,14 +159,15 @@ const HawbPage: React.FC<HawbPageProps> = ({ initialMode }) => {
     }
     setSaving(true);
     try {
+      const payload = { ...form, item_description: sanitizeFreeText(form.item_description) };
       if (modalMode === 'add') {
-        await api.post('/hawbs', form);
+        await api.post('/hawbs', payload);
         toast.success('HAWB created');
       } else if (modalMode === 'edit' && activeHawb) {
-        await api.put(`/hawbs/${activeHawb.id}`, form);
+        await api.put(`/hawbs/${activeHawb.id}`, payload);
         toast.success('HAWB updated');
       } else if (modalMode === 'amend' && activeHawb) {
-        await api.post(`/hawbs/amend/${activeHawb.id}`, form);
+        await api.post(`/hawbs/amend/${activeHawb.id}`, payload);
         toast.success('HAWB amended');
       }
       setModalMode(null);
@@ -404,7 +407,7 @@ const HawbPage: React.FC<HawbPageProps> = ({ initialMode }) => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Item Description:</label>
-                  <input className="form-control" value={form.item_description} onChange={e => f('item_description', e.target.value.replace(/[^a-zA-Z0-9 .,\-/]/g, ''))} placeholder="AS PER INVOICE" maxLength={30} />
+                  <TextInput className="form-control" value={form.item_description} onChange={e => f('item_description', e.target.value.replace(/[^a-zA-Z0-9 .,\-/]/g, ''))} placeholder="AS PER INVOICE" maxLength={30} />
                 </div>
               </div>
             </div>

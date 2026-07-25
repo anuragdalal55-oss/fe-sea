@@ -8,6 +8,9 @@ import { useAuth } from '../hooks/useAuth';
 import SeaInvoicePage from './SeaInvoicePage';
 
 import DateInput from '../components/DateInput';
+import TextArea from '../components/TextArea';
+import TextInput from '../components/TextInput';
+import { sanitizeFreeText } from '../utils/textSanitize';
 const emptyForm = {
   invoice_no: '',
   invoice_date: '',
@@ -81,7 +84,12 @@ const InvoicePage: React.FC = () => {
     }
     setSaving(true);
     try {
-      const payload = { ...form, amount: parseFloat(form.amount) || 0 };
+      const payload = {
+        ...form,
+        consignee_name: sanitizeFreeText(form.consignee_name),
+        description: sanitizeFreeText(form.description),
+        amount: parseFloat(form.amount) || 0,
+      };
       if (editing) {
         await api.put(`/reports/invoices/${editing.id}`, { ...payload, status: editing.status });
         toast.success('Invoice updated');
@@ -208,7 +216,7 @@ const InvoicePage: React.FC = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Consignee Name</label>
-                  <input className="form-control" value={form.consignee_name} onChange={e => f('consignee_name', e.target.value)} />
+                  <TextInput className="form-control" value={form.consignee_name} onChange={e => f('consignee_name', e.target.value)} />
                 </div>
                 <div className="form-row form-row-2">
                   <div className="form-group">
@@ -227,7 +235,7 @@ const InvoicePage: React.FC = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Description</label>
-                  <textarea className="form-control" value={form.description} onChange={e => f('description', e.target.value)} rows={2} />
+                  <TextArea className="form-control" value={form.description} onChange={e => f('description', e.target.value)} rows={2} />
                 </div>
                 {editing && (
                   <div className="form-group">

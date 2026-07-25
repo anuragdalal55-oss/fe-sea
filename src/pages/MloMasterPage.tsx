@@ -2,15 +2,27 @@ import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { SeaMloForm, SeaMloRecord } from '../types/sea';
 import api from '../utils/api';
+import TextInput from '../components/TextInput';
+import { sanitizeFreeText } from '../utils/textSanitize';
+
+interface LocationOption {
+  id: string;
+  iata_code: string;
+  city_name: string;
+  customs_house_code?: string | null;
+}
 
 const emptyForm = (): SeaMloForm => ({
   mlo_name: '',
   mlo_code: '',
   agent_code: '',
+  location_codes: [],
+  all_locations: true,
 });
 
 const MloMasterPage: React.FC = () => {
   const [mlos, setMlos] = useState<SeaMloRecord[]>([]);
+  const [locations, setLocations] = useState<LocationOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -21,6 +33,7 @@ const MloMasterPage: React.FC = () => {
   const fetchMlos = useCallback(async (q = search) => {
     setLoading(true);
     try {
+      // No location filter here — the Master page always lists every MLO.
       const response = await api.get('/sea-mlos', { params: q ? { search: q } : {} });
       setMlos(response.data || []);
     } catch {
@@ -30,8 +43,18 @@ const MloMasterPage: React.FC = () => {
     }
   }, [search]);
 
+  const fetchLocations = useCallback(async () => {
+    try {
+      const response = await api.get('/locations');
+      setLocations(response.data || []);
+    } catch {
+      toast.error('Failed to load locations');
+    }
+  }, []);
+
   useEffect(() => {
     fetchMlos('');
+    fetchLocations();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -42,15 +65,29 @@ const MloMasterPage: React.FC = () => {
 
   const selectMlo = (record: SeaMloRecord) => {
     setSelectedId(record.id);
+    const codes = record.location_codes || [];
     setForm({
       mlo_name: record.mlo_name || '',
       mlo_code: record.mlo_code || '',
       agent_code: record.agent_code || '',
+      location_codes: codes,
+      all_locations: codes.length === 0,
     });
   };
 
   const updateForm = (field: keyof SeaMloForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const locationCode = (l: LocationOption) => l.customs_house_code || l.iata_code;
+
+  const toggleLocationCode = (code: string) => {
+    setForm((current) => ({
+      ...current,
+      location_codes: current.location_codes.includes(code)
+        ? current.location_codes.filter((c) => c !== code)
+        : [...current.location_codes, code],
+    }));
   };
 
   const handleSave = async () => {
@@ -62,14 +99,19 @@ const MloMasterPage: React.FC = () => {
       toast.error('MLO code is required');
       return;
     }
+    if (!form.all_locations && form.location_codes.length === 0) {
+      toast.error('Select at least one location, or choose All Locations');
+      return;
+    }
 
     setSaving(true);
     try {
+      const payload = { ...form, mlo_name: sanitizeFreeText(form.mlo_name) };
       if (selectedId) {
-        await api.put(`/sea-mlos/${selectedId}`, form);
+        await api.put(`/sea-mlos/${selectedId}`, payload);
         toast.success('MLO updated');
       } else {
-        await api.post('/sea-mlos', form);
+        await api.post('/sea-mlos', payload);
         toast.success('MLO created');
       }
       resetForm();
@@ -131,7 +173,7 @@ const MloMasterPage: React.FC = () => {
             <div className="form-row form-row-3">
               <div className="form-group">
                 <label className="form-label">MLO Name <span className="required">*</span></label>
-                <input
+                <TextInput
                   className="form-control"
                   value={form.mlo_name}
                   onChange={(e) => updateForm('mlo_name', e.target.value)}
@@ -155,6 +197,66 @@ const MloMasterPage: React.FC = () => {
                   onChange={(e) => updateForm('agent_code', e.target.value.toUpperCase())}
                   placeholder="e.g. AGNT001"
                 />
+              </div>
+            </div>
+            <div className="form-row form-row-1">
+              <div className="form-group">
+                <label className="form-label">Locations <span className="required">*</span></label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.all_locations}
+                    onChange={(e) => setForm((c) => ({ ...c, all_locations: e.target.checked }))}
+                    style={{ width: 15, height: 15 }}
+                  />
+                  <span style={{ fontWeight: 600 }}>All Locations</span>
+                  <span className="text-muted" style={{ fontSize: 12 }}>
+                    (visible when logged in at any location)
+                  </span>
+                </label>
+                {!form.all_locations && (
+                  <>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setForm((c) => ({ ...c, location_codes: locations.map(locationCode) }))}
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setForm((c) => ({ ...c, location_codes: [] }))}
+                      >
+                        Clear
+                      </button>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>
+                        {form.location_codes.length} selected
+                      </span>
+                    </div>
+                    <div style={{ maxHeight: 180, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px' }}>
+                      {locations.length === 0 && (
+                        <div className="text-muted text-sm" style={{ padding: '8px 0' }}>No locations found</div>
+                      )}
+                      {locations.map((l) => {
+                        const code = locationCode(l);
+                        return (
+                          <label key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={form.location_codes.includes(code)}
+                              onChange={() => toggleLocationCode(code)}
+                              style={{ width: 14, height: 14 }}
+                            />
+                            <span className="font-mono" style={{ fontWeight: 600, fontSize: 13, width: 70 }}>{code}</span>
+                            <span style={{ fontSize: 13 }}>{l.city_name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -190,6 +292,7 @@ const MloMasterPage: React.FC = () => {
                   <th>MLO Name</th>
                   <th>MLO Code</th>
                   <th>Agent Code</th>
+                  <th>Locations</th>
                 </tr>
               </thead>
               <tbody>
@@ -203,6 +306,11 @@ const MloMasterPage: React.FC = () => {
                     <td style={{ fontWeight: 600 }}>{record.mlo_name}</td>
                     <td className="font-mono">{record.mlo_code}</td>
                     <td className="font-mono">{record.agent_code || 'NA'}</td>
+                    <td className="font-mono" style={{ fontSize: 12 }}>
+                      {record.location_codes && record.location_codes.length > 0
+                        ? record.location_codes.join(', ')
+                        : 'All Locations'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { SeaPortForm, SeaPortRecord } from '../types/sea';
 import api from '../utils/api';
+import TextInput from '../components/TextInput';
+import { sanitizeFreeText } from '../utils/textSanitize';
 
 const emptyForm = (): SeaPortForm => ({ port_code: '', port_name: '' });
 
@@ -61,11 +63,12 @@ const PortMasterPage: React.FC<PortMasterPageProps> = ({ endpoint, title, subtit
 
     setSaving(true);
     try {
+      const payload = { ...form, port_name: sanitizeFreeText(form.port_name) };
       if (selectedId) {
-        await api.put(`${endpoint}/${selectedId}`, form);
+        await api.put(`${endpoint}/${selectedId}`, payload);
         toast.success('Port updated');
       } else {
-        await api.post(endpoint, form);
+        await api.post(endpoint, payload);
         toast.success('Port created');
       }
       resetForm();
@@ -134,7 +137,7 @@ const PortMasterPage: React.FC<PortMasterPageProps> = ({ endpoint, title, subtit
               </div>
               <div className="form-group">
                 <label className="form-label">Port Name</label>
-                <input
+                <TextInput
                   className="form-control"
                   value={form.port_name}
                   onChange={(e) => updateForm('port_name', e.target.value.toUpperCase())}

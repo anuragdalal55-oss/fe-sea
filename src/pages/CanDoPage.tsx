@@ -5,6 +5,9 @@ import toast from 'react-hot-toast';
 import { fmtDate } from '../utils/dateUtils';
 
 import DateInput from '../components/DateInput';
+import TextArea from '../components/TextArea';
+import TextInput from '../components/TextInput';
+import { sanitizeFreeText } from '../utils/textSanitize';
 const emptyForm = {
   type: 'CAN' as 'CAN' | 'DO',
   reference_no: '',
@@ -78,12 +81,18 @@ const CanDoPage: React.FC = () => {
       return;
     }
     setSaving(true);
+    const payload = {
+      ...form,
+      consignee_name: sanitizeFreeText(form.consignee_name),
+      consignee_address: sanitizeFreeText(form.consignee_address),
+      remarks: sanitizeFreeText(form.remarks),
+    };
     try {
       if (editing) {
-        await api.put(`/reports/can-do/${editing.id}`, { ...form, status: editing.status || 'active' });
+        await api.put(`/reports/can-do/${editing.id}`, { ...payload, status: editing.status || 'active' });
         toast.success('Updated');
       } else {
-        await api.post('/reports/can-do', form);
+        await api.post('/reports/can-do', payload);
         toast.success(`${form.type} created`);
       }
       setShowModal(false);
@@ -214,11 +223,11 @@ const CanDoPage: React.FC = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Consignee Name</label>
-                  <input className="form-control" value={form.consignee_name} onChange={e => f('consignee_name', e.target.value)} />
+                  <TextInput className="form-control" value={form.consignee_name} onChange={e => f('consignee_name', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Consignee Address</label>
-                  <textarea className="form-control" value={form.consignee_address} onChange={e => f('consignee_address', e.target.value)} rows={2} />
+                  <TextArea className="form-control" value={form.consignee_address} onChange={e => f('consignee_address', e.target.value)} rows={2} />
                 </div>
                 <div className="form-row form-row-2">
                   <div className="form-group">
@@ -236,7 +245,7 @@ const CanDoPage: React.FC = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Remarks</label>
-                  <textarea className="form-control" value={form.remarks} onChange={e => f('remarks', e.target.value)} rows={2} />
+                  <TextArea className="form-control" value={form.remarks} onChange={e => f('remarks', e.target.value)} rows={2} />
                 </div>
               </div>
               <div className="modal-footer">

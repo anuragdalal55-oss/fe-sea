@@ -3,8 +3,11 @@ import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SeaContainerRow, SeaHblForm, SeaHblRecord } from '../types/sea';
 import api from '../utils/api';
+import { roundContainerWeight } from '../utils/numberUtils';
 
 import DateInput from '../components/DateInput';
+import TextArea from '../components/TextArea';
+import { sanitizeFreeText } from '../utils/textSanitize';
 const CONTAINER_STATUS_OPTIONS = ['FCL', 'LCL'];
 const SOC_FLAG_OPTIONS = ['N-NO', 'Y-YES'];
 
@@ -123,6 +126,8 @@ const HblEditPage: React.FC = () => {
     try {
       const payload = {
         ...form,
+        cargo_description: sanitizeFreeText(form.cargo_description),
+        marks_numbers: sanitizeFreeText(form.marks_numbers),
         containers: form.containers.map(ct => ({
           container_no: ct.container_no,
           seal_no: ct.seal_no,
@@ -283,6 +288,7 @@ const HblEditPage: React.FC = () => {
                         placeholder="0.00"
                         value={ct.weight}
                         onChange={(e) => updateContainer(ci, 'weight', e.target.value)}
+                        onBlur={(e) => updateContainer(ci, 'weight', roundContainerWeight(e.target.value))}
                       />
                     </td>
                     <td>
@@ -413,7 +419,7 @@ const HblEditPage: React.FC = () => {
           <div className="form-row form-row-2">
             <div className="form-group">
               <label className="form-label">Cargo Description</label>
-              <textarea
+              <TextArea
                 className="form-control"
                 rows={3}
                 value={form.cargo_description}
@@ -422,7 +428,7 @@ const HblEditPage: React.FC = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Marks and Numbers</label>
-              <textarea
+              <TextArea
                 className="form-control"
                 rows={3}
                 value={form.marks_numbers}

@@ -4,6 +4,8 @@ import { IgmFlight, IgmFlightForm, IgmMawb, IgmMawbForm, EgmFlight, EgmFlightFor
 import toast from 'react-hot-toast';
 
 import DateInput from '../components/DateInput';
+import TextInput from '../components/TextInput';
+import { sanitizeFreeText } from '../utils/textSanitize';
 type Tab = 'igm-flights' | 'igm-mawbs' | 'egm-flights' | 'egm-mawbs' | 'egm-hawbs' | 'transmit';
 
 const SHIP = [{ v: 'T', l: 'T - Total' }, { v: 'P', l: 'P - Part' }, { v: 'S', l: 'S - Split' }];
@@ -170,11 +172,12 @@ const AirManifestPage: React.FC = () => {
     }
     setSaving(true);
     try {
+      const payload = { ...igmMawbForm, item_description: sanitizeFreeText(igmMawbForm.item_description) };
       if (editIgmMawbId) {
-        await api.put(`/igm/mawbs/${editIgmMawbId}`, igmMawbForm);
+        await api.put(`/igm/mawbs/${editIgmMawbId}`, payload);
         toast.success('IGM MAWB updated');
       } else {
-        await api.post('/igm/mawbs', igmMawbForm);
+        await api.post('/igm/mawbs', payload);
         toast.success('IGM MAWB created');
       }
       setShowIgmMawbModal(false); fetchIgmMawbs();
@@ -220,11 +223,12 @@ const AirManifestPage: React.FC = () => {
     }
     setSaving(true);
     try {
+      const payload = { ...egmMawbForm, item_description: sanitizeFreeText(egmMawbForm.item_description) };
       if (editEgmMawbId) {
-        await api.put(`/egm/mawbs/${editEgmMawbId}`, egmMawbForm);
+        await api.put(`/egm/mawbs/${editEgmMawbId}`, payload);
         toast.success('EGM MAWB updated');
       } else {
-        await api.post('/egm/mawbs', egmMawbForm);
+        await api.post('/egm/mawbs', payload);
         toast.success('EGM MAWB created');
       }
       setShowEgmMawbModal(false); fetchEgmMawbs();
@@ -245,11 +249,12 @@ const AirManifestPage: React.FC = () => {
     }
     setSaving(true);
     try {
+      const payload = { ...egmHawbForm, item_description: sanitizeFreeText(egmHawbForm.item_description) };
       if (editEgmHawbId) {
-        await api.put(`/egm/hawbs/${editEgmHawbId}`, egmHawbForm);
+        await api.put(`/egm/hawbs/${editEgmHawbId}`, payload);
         toast.success('EGM HAWB updated');
       } else {
-        await api.post('/egm/hawbs', egmHawbForm);
+        await api.post('/egm/hawbs', payload);
         toast.success('EGM HAWB created');
       }
       setShowEgmHawbModal(false); fetchEgmHawbs();
@@ -652,7 +657,7 @@ const AirManifestPage: React.FC = () => {
                 <div className="form-group"><label className="form-label">ULD Number</label><input className="form-control" value={igmMawbForm.uld_number} onChange={e => fim('uld_number', e.target.value)} maxLength={15} /></div>
               </div>
               <div className="form-row form-row-2">
-                <div className="form-group"><label className="form-label">Item Description</label><input className="form-control" value={igmMawbForm.item_description} onChange={e => fim('item_description', e.target.value)} maxLength={30} /></div>
+                <div className="form-group"><label className="form-label">Item Description</label><TextInput className="form-control" value={igmMawbForm.item_description} onChange={e => fim('item_description', e.target.value)} maxLength={30} /></div>
                 <div className="form-group"><label className="form-label">Special Handling Code</label><input className="form-control" value={igmMawbForm.special_handling_code} onChange={e => fim('special_handling_code', e.target.value)} placeholder="e.g. PER EAT" maxLength={15} /></div>
               </div>
             </div>
@@ -720,7 +725,7 @@ const AirManifestPage: React.FC = () => {
                 <div className="form-group"><label className="form-label">Total Packages</label><input className="form-control" type="number" value={egmMawbForm.total_packages} onChange={e => fem('total_packages', e.target.value)} min={0} /></div>
                 <div className="form-group"><label className="form-label">Gross Weight (KGS)</label><input className="form-control" type="number" step="0.001" value={egmMawbForm.gross_weight} onChange={e => fem('gross_weight', e.target.value)} min={0} /></div>
               </div>
-              <div className="form-group"><label className="form-label">Item Description</label><input className="form-control" value={egmMawbForm.item_description} onChange={e => fem('item_description', e.target.value)} maxLength={60} /></div>
+              <div className="form-group"><label className="form-label">Item Description</label><TextInput className="form-control" value={egmMawbForm.item_description} onChange={e => fem('item_description', e.target.value)} maxLength={60} /></div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowEgmMawbModal(false)}>Cancel</button>
@@ -753,7 +758,7 @@ const AirManifestPage: React.FC = () => {
                 <div className="form-group"><label className="form-label">Total Packages</label><input className="form-control" type="number" value={egmHawbForm.total_packages} onChange={e => feh('total_packages', e.target.value)} min={0} /></div>
                 <div className="form-group"><label className="form-label">Gross Weight (KGS)</label><input className="form-control" type="number" step="0.001" value={egmHawbForm.gross_weight} onChange={e => feh('gross_weight', e.target.value)} min={0} /></div>
               </div>
-              <div className="form-group"><label className="form-label">Item Description</label><input className="form-control" value={egmHawbForm.item_description} onChange={e => feh('item_description', e.target.value)} maxLength={30} /></div>
+              <div className="form-group"><label className="form-label">Item Description</label><TextInput className="form-control" value={egmHawbForm.item_description} onChange={e => feh('item_description', e.target.value)} maxLength={30} /></div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowEgmHawbModal(false)}>Cancel</button>

@@ -100,6 +100,8 @@ export interface SeaCarrierRecord {
   dest?: string | null;
   address?: string | null;
   description?: string | null;
+  // null/empty = unrestricted ("All Locations") — visible from every login location.
+  location_codes?: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -112,6 +114,8 @@ export interface SeaCarrierForm {
   dest: string;
   address: string;
   description: string;
+  location_codes: string[];
+  all_locations: boolean;
 }
 
 export interface SeaMloRecord {
@@ -119,6 +123,8 @@ export interface SeaMloRecord {
   mlo_name: string;
   mlo_code: string;
   agent_code?: string | null;
+  // null/empty = unrestricted ("All Locations") — visible from every login location.
+  location_codes?: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -127,6 +133,8 @@ export interface SeaMloForm {
   mlo_name: string;
   mlo_code: string;
   agent_code: string;
+  location_codes: string[];
+  all_locations: boolean;
 }
 
 export interface SeaPortRecord {

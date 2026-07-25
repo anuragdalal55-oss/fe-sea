@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { fmtDate } from '../utils/dateUtils';
 import api from '../utils/api';
+import Pagination from '../components/Pagination';
+
+const PAGE_SIZE_OPTIONS = [50, 100, 250, 500];
 
 interface PendingRow {
   id: string;
@@ -32,6 +35,9 @@ const PendingStatementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState('');
   const [mblSearch, setMblSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [total, setTotal] = useState(0);
 
   const isAdmin = hasRole(['master_admin', 'admin']);
 
@@ -46,37 +52,25 @@ const PendingStatementPage: React.FC = () => {
   }, [isAdmin]);
 
   const fetchPending = useCallback(async () => {
-    if (!isAdmin) return;
     setLoading(true);
     try {
-      const params: any = {};
+      const params: any = { page, pageSize };
       if (selectedUser) params.user_id = selectedUser;
       if (mblSearch.trim()) params.search = mblSearch.trim();
       const res = await api.get('/sea-pending', { params });
-      setRows(res.data || []);
+      setRows(res.data.data || []);
+      setTotal(res.data.total || 0);
     } catch {
       toast.error('Failed to load pending statements');
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, selectedUser, mblSearch]);
+  }, [selectedUser, mblSearch, page, pageSize]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
   useEffect(() => { fetchPending(); }, [fetchPending]);
 
-  if (!isAdmin) {
-    return (
-      <div className="page-container">
-        <div className="empty-state">
-          <div className="empty-state-title">Access Denied</div>
-          <p>Only administrators can view the Pending Statement.</p>
-          <button className="btn btn-secondary" onClick={() => navigate('/mbl-register')}>Go Back</button>
-        </div>
-      </div>
-    );
-  }
-
-  const handleSearch = () => fetchPending();
+  const handleSearch = () => { setPage(1); };
 
   return (
     <div className="page-container">
@@ -84,7 +78,9 @@ const PendingStatementPage: React.FC = () => {
         <div>
           <div className="sea-eyebrow">Reports</div>
           <h1 className="page-title" style={{ marginBottom: 4 }}>Pending Statement By User</h1>
-          <p className="page-subtitle">Draft MBLs awaiting transmission — admin view only</p>
+          <p className="page-subtitle">
+            {isAdmin ? 'Draft MBLs awaiting transmission — all users' : 'Your draft MBLs awaiting transmission'}
+          </p>
         </div>
         <div className="sea-actions">
           <button className="btn btn-secondary" onClick={() => navigate('/mbl-register')}>Back to MBL Register</button>
@@ -95,19 +91,21 @@ const PendingStatementPage: React.FC = () => {
       {/* Filters */}
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-body" style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap', padding: '14px 20px' }}>
-          <div className="form-group" style={{ minWidth: 200, margin: 0 }}>
-            <label className="form-label">User</label>
-            <select
-              className="form-control"
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-            >
-              <option value="">All Users</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>{u.username.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
+          {isAdmin && (
+            <div className="form-group" style={{ minWidth: 200, margin: 0 }}>
+              <label className="form-label">User</label>
+              <select
+                className="form-control"
+                value={selectedUser}
+                onChange={(e) => { setSelectedUser(e.target.value); setPage(1); }}
+              >
+                <option value="">All Users</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.username.toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="form-group" style={{ minWidth: 220, margin: 0 }}>
             <label className="form-label">MBL No.</label>
             <input
@@ -130,7 +128,7 @@ const PendingStatementPage: React.FC = () => {
           <span className="card-title">
             Pending Records
             <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 400, color: '#888' }}>
-              {rows.length} record{rows.length !== 1 ? 's' : ''}
+              {total} record{total !== 1 ? 's' : ''}
             </span>
           </span>
         </div>
@@ -187,6 +185,14 @@ const PendingStatementPage: React.FC = () => {
             </table>
           )}
         </div>
+        <Pagination
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPage={setPage}
+          onPageSize={(ps) => { setPageSize(ps); setPage(1); }}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+        />
       </div>
 
       <div className="sea-footer">EDI Software Solutions @ 2022 – 2026 All rights reserved</div>

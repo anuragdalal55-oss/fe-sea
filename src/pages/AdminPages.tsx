@@ -6,6 +6,9 @@ import toast from 'react-hot-toast';
 import { fmtDate, fmtDateTime } from '../utils/dateUtils';
 
 import DateInput from '../components/DateInput';
+import TextArea from '../components/TextArea';
+import TextInput from '../components/TextInput';
+import { sanitizeFreeText } from '../utils/textSanitize';
 // ─── Register User ────────────────────────────────────────────────────────────
 export const RegisterUserPage: React.FC = () => {
   const [form, setForm] = useState({ username: '', password: '', full_name: '', email: '', role: 'user', profile_id: '' });
@@ -452,14 +455,22 @@ export const RegisterProfilePage: React.FC = () => {
     }
     setSaving(true);
     try {
+      const sanitizedForm = {
+        ...form,
+        company_name: sanitizeFreeText(form.company_name),
+        address1: sanitizeFreeText(form.address1),
+        address2: sanitizeFreeText(form.address2),
+        billing_company: sanitizeFreeText(form.billing_company),
+        billing_state: sanitizeFreeText(form.billing_state),
+      };
       if (editingId) {
         // Edit: single profile, location_code stays as-is (already set in form)
-        await api.put(`/profiles/${editingId}`, form);
+        await api.put(`/profiles/${editingId}`, sanitizedForm);
         toast.success('Profile updated');
       } else {
         // Batch create: one profile per selected location, server skips duplicates
         const batchRes = await api.post('/profiles/batch', {
-          ...form,
+          ...sanitizedForm,
           location_codes: selectedLocationCodes,
         });
         const { created, skipped } = batchRes.data;
@@ -626,18 +637,18 @@ export const RegisterProfilePage: React.FC = () => {
                 {/* Agent Name */}
                 <div className="form-group">
                   <label className="form-label">Agent Name <span className="required">*</span></label>
-                  <input className="form-control" value={form.company_name} onChange={e => f('company_name', e.target.value)} placeholder="Company / Agent Name" />
+                  <TextInput className="form-control" value={form.company_name} onChange={e => f('company_name', e.target.value)} placeholder="Company / Agent Name" />
                 </div>
 
                 {/* Address */}
                 <div className="form-row form-row-2">
                   <div className="form-group">
                     <label className="form-label">Address1</label>
-                    <textarea className="form-control" value={form.address1} onChange={e => f('address1', e.target.value)} rows={2} placeholder="Address Line 1" />
+                    <TextArea className="form-control" value={form.address1} onChange={e => f('address1', e.target.value)} rows={2} placeholder="Address Line 1" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Address2</label>
-                    <textarea className="form-control" value={form.address2} onChange={e => f('address2', e.target.value)} rows={2} placeholder="Address Line 2" />
+                    <TextArea className="form-control" value={form.address2} onChange={e => f('address2', e.target.value)} rows={2} placeholder="Address Line 2" />
                   </div>
                 </div>
 
@@ -649,7 +660,7 @@ export const RegisterProfilePage: React.FC = () => {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Billing Company</label>
-                    <input className="form-control" value={form.billing_company} onChange={e => f('billing_company', e.target.value)} placeholder="Billing Company Name" />
+                    <TextInput className="form-control" value={form.billing_company} onChange={e => f('billing_company', e.target.value)} placeholder="Billing Company Name" />
                   </div>
                 </div>
 
@@ -657,7 +668,7 @@ export const RegisterProfilePage: React.FC = () => {
                 <div className="form-row form-row-2">
                   <div className="form-group">
                     <label className="form-label">Billing State</label>
-                    <input className="form-control" value={form.billing_state} onChange={e => f('billing_state', e.target.value)} placeholder="State" />
+                    <TextInput className="form-control" value={form.billing_state} onChange={e => f('billing_state', e.target.value)} placeholder="State" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">GST (%)</label>

@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SeaMblRecord } from '../types/sea';
 import { fmtDate } from '../utils/dateUtils';
-import { formatWeight } from '../utils/numberUtils';
+import { formatWeight, roundContainerWeight } from '../utils/numberUtils';
 import api from '../utils/api';
 
 const ChecklistPage: React.FC = () => {
@@ -177,7 +177,10 @@ const ChecklistPage: React.FC = () => {
                       HBL Date: <span style={{ fontWeight: 'normal' }}>{hbl.hbl_date ? fmtDate(hbl.hbl_date) : '—'}</span>
                     </td>
                     <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '35%' }}>
+                      Cargo Movement: <span style={{ fontWeight: 'normal' }}>{(hbl.cargo_move || '').split('-')[0]}</span>
+                      <br />
                       Port of Delivery: <span style={{ fontWeight: 'normal' }}>{hbl.port_of_delivery || '—'}</span>
+                      <br />
                     </td>
                   </tr>
                   <tr>
@@ -190,7 +193,6 @@ const ChecklistPage: React.FC = () => {
                     </td>
                     <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold' }}>
                       Gross Weight:: <span style={{ fontWeight: 'normal' }}>{formatWeight(hbl.gross_weight)} KGS</span>
-                      &nbsp;&nbsp; Cargo Movement: <span style={{ fontWeight: 'normal' }}>{(hbl.cargo_move || '').split('-')[0]}</span>
                     </td>
                   </tr>
                   <tr>
@@ -234,7 +236,7 @@ const ChecklistPage: React.FC = () => {
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px', fontFamily: 'monospace' }}>{ct.container_no || '—'}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.seal_no || '—'}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.package_count || '—'}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.weight ? formatWeight(ct.weight) : '—'}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.weight ? roundContainerWeight(ct.weight) : '—'}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{ct.container_size || '—'}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{(ct.container_type || '').split('-')[0]}</td>
                       <td style={{ border: '1px solid #ddd', padding: '5px 8px' }}>{(ct.soc_flag || '').split('-')[0]}</td>
@@ -278,7 +280,7 @@ const ChecklistPage: React.FC = () => {
                       Container Pkgs: <span style={{ fontWeight: 'normal' }}>{grandContainerPkgs || '—'}</span>
                     </td>
                     <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontWeight: 'bold', width: '25%' }}>
-                      Container Weight: <span style={{ fontWeight: 'normal' }}>{grandContainerWt ? formatWeight(grandContainerWt) : '—'}</span>
+                      Container Weight: <span style={{ fontWeight: 'normal' }}>{grandContainerWt ? roundContainerWeight(grandContainerWt) : '—'}</span>
                     </td>
                   </tr>
                 </tbody>

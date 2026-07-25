@@ -21,7 +21,9 @@ import MloMasterPage from './pages/MloMasterPage';
 import PendingStatementPage from './pages/PendingStatementPage';
 import { NotFoundPage } from './pages/Placeholders';
 import SeaConsolePage from './pages/SeaConsolePage';
+import SeaHblListPage from './pages/SeaHblListPage';
 import SeaMblRegisterPage from './pages/SeaMblRegisterPage';
+import SubmissionReportPage from './pages/SubmissionReportPage';
 import api from './utils/api';
 import { initAutoOpenDatePicker } from './utils/autoOpenDatePicker';
 
@@ -61,10 +63,12 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<Navigate to="/mbl-register" replace />} />
         <Route path="/login" element={<Navigate to="/mbl-register" replace />} />
         <Route path="/mbl-register" element={<ProtectedRoute><SeaMblRegisterPage /></ProtectedRoute>} />
+        <Route path="/mbl-register/hbl-list/:id" element={<ProtectedRoute><SeaHblListPage /></ProtectedRoute>} />
         <Route path="/mbl" element={<ProtectedRoute><SeaConsolePage /></ProtectedRoute>} />
         <Route path="/hbl/:id" element={<ProtectedRoute><HblEditPage /></ProtectedRoute>} />
         <Route path="/checklist/:id" element={<ProtectedRoute><ChecklistPage /></ProtectedRoute>} />
-        <Route path="/pending-statement" element={<ProtectedRoute roles={['master_admin', 'admin']}><PendingStatementPage /></ProtectedRoute>} />
+        <Route path="/pending-statement" element={<ProtectedRoute><PendingStatementPage /></ProtectedRoute>} />
+        <Route path="/submission-report" element={<ProtectedRoute><SubmissionReportPage /></ProtectedRoute>} />
         <Route path="/masters/carriers" element={<ProtectedRoute><CarrierMasterPage /></ProtectedRoute>} />
         <Route path="/masters/mlos" element={<ProtectedRoute><MloMasterPage /></ProtectedRoute>} />
         <Route path="/masters/loading-ports" element={<ProtectedRoute><LoadingPortMasterPage /></ProtectedRoute>} />

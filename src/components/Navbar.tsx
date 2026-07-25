@@ -28,9 +28,9 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Report',
-    adminOnly: true,
     items: [
       { label: 'Pending Statement', path: '/pending-statement' },
+      { label: 'Submission Report', path: '/submission-report' },
     ],
   },
   { label: 'Location', path: '/location' },

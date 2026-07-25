@@ -5,6 +5,7 @@ import Pagination from '../components/Pagination';
 import { useAuth } from '../hooks/useAuth';
 import { SeaMblRecord } from '../types/sea';
 import { fmtDate } from '../utils/dateUtils';
+import { roundContainerWeight } from '../utils/numberUtils';
 import api from '../utils/api';
 
 const SeaMblRegisterPage: React.FC = () => {
@@ -23,7 +24,6 @@ const SeaMblRegisterPage: React.FC = () => {
   const [form3Record, setForm3Record] = useState<SeaMblRecord | null>(null);
   const [form3Hbls, setForm3Hbls] = useState<any[]>([]);
   const [form3Loading, setForm3Loading] = useState(false);
-  const [form3PanNo, setForm3PanNo] = useState('');
 
   const fetchMbls = useCallback(async (p: number, s: string) => {
     setLoading(true);
@@ -84,16 +84,9 @@ const SeaMblRegisterPage: React.FC = () => {
     setForm3Record(record);
     setForm3Loading(true);
     setForm3Hbls([]);
-    setForm3PanNo('');
     try {
       const resp = await api.get(`/sea-mbls/${record.id}`);
       setForm3Hbls(resp.data.hbls || []);
-      if (record.profile_id) {
-        try {
-          const profResp = await api.get(`/sea-profiles/${record.profile_id}`);
-          setForm3PanNo(profResp.data?.carn_number || profResp.data?.pan_number || '');
-        } catch { /* profile not available */ }
-      }
     } catch {
       toast.error('Failed to load Form 3 data');
     } finally {
@@ -102,15 +95,14 @@ const SeaMblRegisterPage: React.FC = () => {
   };
 
   const statusBadge = (record: any) => {
-    const txCount = record.tx_count || 0;
-    if (txCount > 0) {
-      return (
-        <span className="badge" style={{ background: '#ccfbf1', color: '#0f766e', fontWeight: 700, border: '1px solid #99f6e4' }}>
-          Downloaded
-        </span>
-      );
+    if (record.status === 'draft') {
+      return <span className="badge badge-gray">Draft</span>;
     }
-    return <span className="badge badge-gray">Draft</span>;
+    return (
+      <span className="badge" style={{ background: '#ccfbf1', color: '#0f766e', fontWeight: 700, border: '1px solid #99f6e4' }}>
+        Downloaded
+      </span>
+    );
   };
 
   return (
@@ -230,6 +222,13 @@ const SeaMblRegisterPage: React.FC = () => {
                           >
                             Form 3
                           </button>
+                          <button
+                            className="btn btn-sm"
+                            style={{ background: '#6d28d9', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
+                            onClick={() => navigate(`/mbl-register/hbl-list/${record.id}`)}
+                          >
+                            HBL List
+                          </button>
                         </div>
                       </td>
                       <td>
@@ -267,6 +266,13 @@ const SeaMblRegisterPage: React.FC = () => {
           <div className="f3-noprint" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', borderBottom: '2px solid #1a3fbf', background: '#f0f4ff' }}>
             <button className="btn btn-secondary btn-sm" onClick={() => setForm3Record(null)}>← Back</button>
             <button className="btn btn-primary btn-sm" onClick={() => window.print()}>Print</button>
+            <button
+              className="btn btn-sm"
+              style={{ background: '#6d28d9', color: '#fff', border: 'none' }}
+              onClick={() => navigate(`/mbl-register/hbl-list/${form3Record.id}`)}
+            >
+              HBL List
+            </button>
             <span style={{ fontWeight: 700, fontSize: 14, color: '#1a3fbf' }}>
               Form 3 — Pending Statement — {form3Record.mbl_no}
             </span>
@@ -299,7 +305,7 @@ const SeaMblRegisterPage: React.FC = () => {
                     <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Mbl Date:</strong> {fmtDate(form3Record.mbl_date)}</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Pan No:</strong> {form3PanNo || '—'}</td>
+                    <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Port of Delivery:</strong> {form3Hbls[0]?.port_of_delivery || form3Record.port_of_delivery || '—'}</td>
                     <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Port Code:</strong> {form3Record.port_of_loading || '—'}</td>
                     <td style={{ padding: '6px 10px', border: '1px solid #555' }}><strong>Shipping Line:</strong> {form3Record.shipping_line || '—'}</td>
                     <td style={{ padding: '6px 10px', border: '1px solid #555' }}></td>
@@ -364,7 +370,7 @@ const SeaMblRegisterPage: React.FC = () => {
                               <div>{ct.seal_no || '—'}</div>
                               <div>{ct.container_type || 'FCL'}</div>
                               <div>{ct.package_count || 0}</div>
-                              <div>{ct.weight ? `${(Number(ct.weight) / 1000).toFixed(2)} Tons` : '—'}</div>
+                              <div>{ct.weight ? `${roundContainerWeight(ct.weight)} Tons` : '—'}</div>
                             </div>
                           ))}
                         </td>

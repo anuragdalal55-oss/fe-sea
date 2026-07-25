@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { fmtDate, fmtDateTime } from '../utils/dateUtils';
 import { useAuth } from '../hooks/useAuth';
 import Pagination from '../components/Pagination';
+import { sanitizeFreeText } from '../utils/textSanitize';
 
 import DateInput from '../components/DateInput';
 const thS: React.CSSProperties = { border: '1px solid #cbd5e1', padding: '5px 8px', background: '#e2e8f0', fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap' };
@@ -350,7 +351,7 @@ export const ConsolStatementPage: React.FC = () => {
       const csvRows = allRows.map((row: any) => [
         row.mawb_no, fmtDateTime(row.created_at), fmtDateTime(row.transmission_date),
         row.customs_house_code || '', row.origin || '', row.destination || '',
-        row.pan_number || '', `"${row.company_name || ''}"`, row.username || '',
+        row.pan_number || '', `"${sanitizeFreeText(row.company_name || '')}"`, row.username || '',
         row.status, row.hawb_count, row.hawb_total_packages || 0, Number(row.hawb_total_weight || 0).toFixed(2),
       ].join(','));
       const blob = new Blob([header + '\n' + csvRows.join('\n')], { type: 'text/csv' });

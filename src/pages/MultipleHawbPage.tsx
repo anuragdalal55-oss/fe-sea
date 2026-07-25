@@ -4,6 +4,8 @@ import api from '../utils/api';
 import { Mawb } from '../types';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
+import TextInput from '../components/TextInput';
+import { sanitizeFreeText } from '../utils/textSanitize';
 
 interface HawbRow {
   id?: string;          // present for existing HAWBs
@@ -127,13 +129,14 @@ const MultipleHawbPage: React.FC = () => {
           destination: row.destination,
           total_packages: row.total_packages,
           gross_weight: row.gross_weight,
-          item_description: row.item_description,
+          item_description: sanitizeFreeText(row.item_description),
         });
       }
 
       // Create new HAWBs
       if (newRows.length > 0) {
-        await api.post('/hawbs/batch', { mawb_id: selectedMawbId, hawbs: newRows });
+        const sanitizedNewRows = newRows.map(r => ({ ...r, item_description: sanitizeFreeText(r.item_description) }));
+        await api.post('/hawbs/batch', { mawb_id: selectedMawbId, hawbs: sanitizedNewRows });
       }
 
       const updatedCount = existingRows.length;
@@ -327,7 +330,7 @@ const MultipleHawbPage: React.FC = () => {
                         />
                       </td>
                       <td>
-                        <input
+                        <TextInput
                           className="form-control"
                           style={{ minWidth: 160 }}
                           value={row.item_description}

@@ -6,11 +6,12 @@ interface PaginationProps {
   pageSize: number;
   onPage: (p: number) => void;
   onPageSize?: (ps: number) => void;
+  pageSizeOptions?: number[];
 }
 
 const PAGE_SIZES = [10, 25, 50, 100];
 
-const Pagination: React.FC<PaginationProps> = ({ total, page, pageSize, onPage, onPageSize }) => {
+const Pagination: React.FC<PaginationProps> = ({ total, page, pageSize, onPage, onPageSize, pageSizeOptions }) => {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   if (total === 0) return null;
 
@@ -53,7 +54,7 @@ const Pagination: React.FC<PaginationProps> = ({ total, page, pageSize, onPage, 
           onChange={e => { onPageSize(Number(e.target.value)); onPage(1); }}
           style={{ marginLeft: 12, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}
         >
-          {PAGE_SIZES.map(s => <option key={s} value={s}>{s} / page</option>)}
+          {(pageSizeOptions || PAGE_SIZES).map(s => <option key={s} value={s}>{s} / page</option>)}
         </select>
       )}
     </div>

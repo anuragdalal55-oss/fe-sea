@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useLocation as useRouterLocation } from 'react-router-dom';
+import { useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
   SeaCarrierRecord,
@@ -10,10 +10,13 @@ import {
   SeaMblRecord,
   SeaMloRecord,
 } from '../types/sea';
-import { formatWeight } from '../utils/numberUtils';
+import { formatWeight, roundContainerWeight } from '../utils/numberUtils';
 import api from '../utils/api';
 
 import DateInput from '../components/DateInput';
+import TextArea from '../components/TextArea';
+import TextInput from '../components/TextInput';
+import { sanitizeFreeText } from '../utils/textSanitize';
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Only 3 cargo move options as per requirement
@@ -271,7 +274,7 @@ const ImporterSearch: React.FC<{
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <textarea
+      <TextArea
         className="form-control"
         style={{ minHeight: 70 }}
         maxLength={35}
@@ -479,6 +482,7 @@ const mapHblRecordToForm = (row: any, fallbackMbl?: any): SeaHblForm => ({
 const SeaConsolePage: React.FC = () => {
   const { selectedLocation, user } = useAuth();
   const routerLocation = useRouterLocation();
+  const navigate = useNavigate();
 
   const [selectedMblId, setSelectedMblId] = useState<string | null>(null);
   const [form, setForm] = useState<SeaMblForm>(createMblForm());
@@ -495,11 +499,15 @@ const SeaConsolePage: React.FC = () => {
     (rows || []).map((r) => ({ code: r.port_code, name: r.port_name || '' }));
 
   useEffect(() => {
-    api.get('/sea-carriers').then((r) => setCarriers(r.data || [])).catch(() => {});
-    api.get('/sea-mlos').then((r) => setMlos(r.data || [])).catch(() => {});
+    // Scope MLO/Carrier options to the user's current login location — records
+    // tagged "All Locations" (location_codes null/empty) still show everywhere.
+    const customsHouseCode = selectedLocation?.customs_house_code || user?.customs_house_code || '';
+    const locationParams = customsHouseCode ? { customs_house_code: customsHouseCode } : {};
+    api.get('/sea-carriers', { params: locationParams }).then((r) => setCarriers(r.data || [])).catch(() => {});
+    api.get('/sea-mlos', { params: locationParams }).then((r) => setMlos(r.data || [])).catch(() => {});
     api.get('/sea-loading-ports').then((r) => setLoadingPorts(toPortOptions(r.data))).catch(() => {});
     api.get('/sea-delivery-ports').then((r) => setDeliveryPorts(toPortOptions(r.data))).catch(() => {});
-  }, []);
+  }, [selectedLocation?.customs_house_code, user?.customs_house_code]);
 
   // Persists a new port typed into the Loading/Delivery Port autocomplete to its master table
   const createLoadingPort = async (code: string) => {
@@ -672,10 +680,20 @@ const SeaConsolePage: React.FC = () => {
     try {
       const payload = {
         ...form,
+        description: sanitizeFreeText(form.description),
+        importer_name: sanitizeFreeText(form.importer_name),
+        importer_address1: sanitizeFreeText(form.importer_address1),
+        importer_address2: sanitizeFreeText(form.importer_address2),
+        importer_address3: sanitizeFreeText(form.importer_address3),
         customs_house_code: form.customs_house_code || selectedLocation?.customs_house_code || user?.customs_house_code || '',
         profile_id: form.profile_id || user?.profile_id || '',
         hbls: hbls.map(hbl => ({
           ...hbl,
+          importer_name: sanitizeFreeText(hbl.importer_name),
+          importer_address1: sanitizeFreeText(hbl.importer_address1),
+          importer_address2: sanitizeFreeText(hbl.importer_address2),
+          importer_address3: sanitizeFreeText(hbl.importer_address3),
+          cargo_description: sanitizeFreeText(hbl.cargo_description),
           containers: hbl.containers.map(ct => ({
             container_no: ct.container_no,
             seal_no: ct.seal_no,
@@ -708,7 +726,15 @@ const SeaConsolePage: React.FC = () => {
           soc_flag: ct.soc_flag,
           agent_code: ct.agent_code,
         }));
-        api.put(`/sea-hbls/${savedHbl.id}`, { ...formHbl, containers: containersPatch }).catch(() => {});
+        api.put(`/sea-hbls/${savedHbl.id}`, {
+          ...formHbl,
+          importer_name: sanitizeFreeText(formHbl.importer_name),
+          importer_address1: sanitizeFreeText(formHbl.importer_address1),
+          importer_address2: sanitizeFreeText(formHbl.importer_address2),
+          importer_address3: sanitizeFreeText(formHbl.importer_address3),
+          cargo_description: sanitizeFreeText(formHbl.cargo_description),
+          containers: containersPatch,
+        }).catch(() => {});
         return { ...savedHbl, containers_json: containersPatch };
       });
       applyRecord({ ...response.data, hbls: patchedHbls });
@@ -716,19 +742,22 @@ const SeaConsolePage: React.FC = () => {
       // Auto-save unique importer name+address combinations to the importer master
       const seen = new Set<string>();
       for (const hbl of hbls) {
-        if (hbl.importer_name.trim()) {
+        const importerName = sanitizeFreeText(hbl.importer_name);
+        if (importerName) {
           const key = `${hbl.importer_name}|${hbl.importer_address1}|${hbl.importer_address2}|${hbl.importer_address3}`;
           if (!seen.has(key)) {
             seen.add(key);
             api.post('/sea-importers', {
-              importer_name: hbl.importer_name.trim(),
-              address1: hbl.importer_address1.trim(),
-              address2: hbl.importer_address2.trim(),
-              address3: hbl.importer_address3.trim(),
+              importer_name: importerName,
+              address1: sanitizeFreeText(hbl.importer_address1),
+              address2: sanitizeFreeText(hbl.importer_address2),
+              address3: sanitizeFreeText(hbl.importer_address3),
             }).catch(() => {});
           }
         }
       }
+      // Same pattern as the Location page: after a successful save, return to the MBL register list
+      navigate('/mbl-register');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Save failed');
     } finally {
@@ -860,7 +889,7 @@ const SeaConsolePage: React.FC = () => {
           <div className="form-row">
             <div className="form-group ef-req">
               <label className="form-label">Remarks</label>
-              <input
+              <TextInput
                 className="form-control"
                 value={form.description}
                 onChange={(e) => updateForm('description', e.target.value.toUpperCase())}
@@ -1057,7 +1086,7 @@ const SeaConsolePage: React.FC = () => {
                       ({(activeHbl.importer_address1 || '').length}/35)
                     </span>
                   </label>
-                  <textarea
+                  <TextArea
                     className="form-control"
                     style={{ minHeight: 70 }}
                     maxLength={35}
@@ -1072,7 +1101,7 @@ const SeaConsolePage: React.FC = () => {
                       ({(activeHbl.importer_address2 || '').length}/35)
                     </span>
                   </label>
-                  <textarea
+                  <TextArea
                     className="form-control"
                     style={{ minHeight: 70 }}
                     maxLength={35}
@@ -1087,7 +1116,7 @@ const SeaConsolePage: React.FC = () => {
                       ({(activeHbl.importer_address3 || '').length}/35)
                     </span>
                   </label>
-                  <textarea
+                  <TextArea
                     className="form-control"
                     style={{ minHeight: 70 }}
                     maxLength={35}
@@ -1106,7 +1135,7 @@ const SeaConsolePage: React.FC = () => {
                       ({(activeHbl.cargo_description || '').length}/150)
                     </span>
                   </label>
-                  <textarea
+                  <TextArea
                     className="form-control"
                     style={{ minHeight: 60 }}
                     maxLength={150}
@@ -1275,6 +1304,7 @@ const SeaConsolePage: React.FC = () => {
                             placeholder="0.00"
                             value={ct.weight}
                             onChange={(e) => updateContainer(activeHblTab, ci, 'weight', e.target.value)}
+                            onBlur={(e) => updateContainer(activeHblTab, ci, 'weight', roundContainerWeight(e.target.value))}
                           />
                         </td>
                         <td>
