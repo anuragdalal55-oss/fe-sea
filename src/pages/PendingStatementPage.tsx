@@ -181,6 +181,9 @@ const PendingStatementPage: React.FC = () => {
                     </td>
                   </tr>
                 ))}
+                <tr style={{ fontWeight: 700, background: '#f1f5f9', borderTop: '2px solid #e2e8f0' }}>
+                  <td colSpan={8}><strong>Total Pending MBLs: {total}</strong></td>
+                </tr>
               </tbody>
             </table>
           )}

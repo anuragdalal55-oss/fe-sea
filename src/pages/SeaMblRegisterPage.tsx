@@ -83,6 +83,7 @@ const SeaMblRegisterPage: React.FC = () => {
 
   const handleDelete = async (record: SeaMblRecord, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (record.status !== 'draft') { toast.error('Only draft MBLs can be deleted'); return; }
     if (!window.confirm(`Delete MBL "${record.mbl_no}"? This will also delete all its HBL and container records. This cannot be undone.`)) return;
     setDeletingId(record.id);
     try {
@@ -258,8 +259,15 @@ const SeaMblRegisterPage: React.FC = () => {
                           </button>
                           <button
                             className="btn btn-sm"
-                            style={{ background: '#b91c1c', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
-                            disabled={deletingId === record.id}
+                            style={{
+                              background: record.status === 'draft' ? '#b91c1c' : '#cbd5e1',
+                              color: record.status === 'draft' ? '#fff' : '#64748b',
+                              border: 'none',
+                              whiteSpace: 'nowrap',
+                              cursor: record.status === 'draft' ? 'pointer' : 'not-allowed',
+                            }}
+                            disabled={deletingId === record.id || record.status !== 'draft'}
+                            title={record.status !== 'draft' ? 'Only draft MBLs can be deleted' : undefined}
                             onClick={(e) => handleDelete(record, e)}
                           >
                             {deletingId === record.id ? 'Deleting…' : 'Delete'}
