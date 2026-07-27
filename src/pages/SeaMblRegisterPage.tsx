@@ -20,6 +20,7 @@ const SeaMblRegisterPage: React.FC = () => {
   const [pageSize] = useState(15);
   const [total, setTotal] = useState(0);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewMbl, setViewMbl] = useState<SeaMblRecord | null>(null);
   const [form3Record, setForm3Record] = useState<SeaMblRecord | null>(null);
   const [form3Hbls, setForm3Hbls] = useState<any[]>([]);
@@ -77,6 +78,21 @@ const SeaMblRegisterPage: React.FC = () => {
       toast.error(err.response?.data?.message || 'Generation failed');
     } finally {
       setGeneratingId(null);
+    }
+  };
+
+  const handleDelete = async (record: SeaMblRecord, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete MBL "${record.mbl_no}"? This will also delete all its HBL and container records. This cannot be undone.`)) return;
+    setDeletingId(record.id);
+    try {
+      await api.delete(`/sea-mbls/${record.id}`);
+      toast.success(`Deleted MBL ${record.mbl_no}`);
+      fetchMbls(page, search);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete MBL');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -231,14 +247,24 @@ const SeaMblRegisterPage: React.FC = () => {
                           </button>
                         </div>
                       </td>
-                      <td>
-                        <button
-                          className="btn-link"
-                          style={{ color: 'var(--accent)', fontWeight: 600 }}
-                          onClick={() => setViewMbl(record)}
-                        >
-                          View
-                        </button>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-start' }}>
+                          <button
+                            className="btn-link"
+                            style={{ color: 'var(--accent)', fontWeight: 600 }}
+                            onClick={() => setViewMbl(record)}
+                          >
+                            View
+                          </button>
+                          <button
+                            className="btn btn-sm"
+                            style={{ background: '#b91c1c', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
+                            disabled={deletingId === record.id}
+                            onClick={(e) => handleDelete(record, e)}
+                          >
+                            {deletingId === record.id ? 'Deleting…' : 'Delete'}
+                          </button>
+                        </div>
                       </td>
                     </tr>,
                   ];
@@ -365,7 +391,7 @@ const SeaMblRegisterPage: React.FC = () => {
                               marginBottom: ci < containers.length - 1 ? 8 : 0,
                               borderBottom: ci < containers.length - 1 ? '1px solid #ccc' : 'none',
                             }}>
-                              <div style={{ fontWeight: 600 }}>{ct.agent_code || '—'}</div>
+                              <div style={{ fontWeight: 600 }}>{hbl.port_of_delivery || '—'}</div>
                               <div style={{ fontFamily: 'monospace', fontSize: 11 }}>{ct.container_no || '—'}</div>
                               <div>{ct.seal_no || '—'}</div>
                               <div>{ct.container_type || 'FCL'}</div>

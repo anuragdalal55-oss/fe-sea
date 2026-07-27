@@ -626,7 +626,7 @@ const SeaConsolePage: React.FC = () => {
   const addContainer = (hblIndex: number) =>
     setHbls((c) => c.map((row, i) => {
       if (i !== hblIndex) return row;
-      return { ...row, containers: [...row.containers, emptyContainer()] };
+      return { ...row, containers: [...row.containers, { ...emptyContainer(), agent_code: row.mlo_code || '' }] };
     }));
 
   const removeContainer = (hblIndex: number, containerIndex: number) =>

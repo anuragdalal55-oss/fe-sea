@@ -27,8 +27,9 @@ const SeaHblListPage: React.FC = () => {
   const [hbls, setHbls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [containersFor, setContainersFor] = useState<any | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadHbls = () => {
     if (!id) return;
     setLoading(true);
     api.get(`/sea-mbls/${id}`)
@@ -38,7 +39,26 @@ const SeaHblListPage: React.FC = () => {
       })
       .catch(() => toast.error('Failed to load HBL list'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadHbls();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const handleDeleteHbl = async (hbl: any) => {
+    if (!window.confirm(`Delete HBL "${hbl.hbl_no}"? Remaining subline numbers will shift up to close the gap. This cannot be undone.`)) return;
+    setDeletingId(hbl.id);
+    try {
+      await api.delete(`/sea-hbls/${hbl.id}`);
+      toast.success(`Deleted HBL ${hbl.hbl_no}`);
+      loadHbls();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete HBL');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const totalPackages = hbls.reduce((s, h) => s + (Number(h.package_count) || 0), 0);
   const totalWeight = hbls.reduce((s, h) => s + (Number(h.gross_weight) || 0), 0);
@@ -82,6 +102,7 @@ const SeaHblListPage: React.FC = () => {
                   <th>Carrier Name</th>
                   <th>Edit</th>
                   <th>Container List</th>
+                  <th>Delete</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,6 +129,16 @@ const SeaHblListPage: React.FC = () => {
                         Container List
                       </button>
                     </td>
+                    <td>
+                      <button
+                        className="btn btn-sm"
+                        style={{ background: '#b91c1c', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
+                        disabled={deletingId === h.id}
+                        onClick={() => handleDeleteHbl(h)}
+                      >
+                        {deletingId === h.id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 <tr>
@@ -115,7 +146,7 @@ const SeaHblListPage: React.FC = () => {
                   <td style={{ fontWeight: 700 }}>{totalPackages}</td>
                   <td />
                   <td style={{ fontWeight: 700 }}>{formatWeight(totalWeight)}</td>
-                  <td colSpan={5} />
+                  <td colSpan={6} />
                 </tr>
               </tbody>
             </table>
