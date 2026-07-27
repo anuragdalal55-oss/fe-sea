@@ -101,7 +101,7 @@ const PendingStatementPage: React.FC = () => {
               >
                 <option value="">All Users</option>
                 {users.map((u) => (
-                  <option key={u.id} value={u.id}>{u.username.toUpperCase()}</option>
+                  <option key={u.id} value={u.id}>{(u.username || '—').toUpperCase()}</option>
                 ))}
               </select>
             </div>

@@ -91,12 +91,12 @@ const PortSearch: React.FC<{
     if (!value) return options.slice(0, 15);
     const q = value.toUpperCase();
     return options.filter(
-      (o) => o.code.toUpperCase().includes(q) || o.name.toUpperCase().includes(q)
+      (o) => (o.code || '').toUpperCase().includes(q) || (o.name || '').toUpperCase().includes(q)
     ).slice(0, 20);
   }, [value, options]);
 
   const exactMatch = React.useMemo(
-    () => options.some((o) => o.code.toUpperCase() === value.toUpperCase()),
+    () => options.some((o) => (o.code || '').toUpperCase() === value.toUpperCase()),
     [value, options]
   );
 
@@ -178,7 +178,7 @@ const NameSearch: React.FC<{
     if (!value) return options.slice(0, 15);
     const q = value.toUpperCase();
     return options.filter(
-      (o) => o.name.toUpperCase().includes(q) || o.code.toUpperCase().includes(q)
+      (o) => (o.name || '').toUpperCase().includes(q) || (o.code || '').toUpperCase().includes(q)
     ).slice(0, 20);
   }, [value, options]);
 
@@ -496,7 +496,7 @@ const SeaConsolePage: React.FC = () => {
   const [deliveryPorts, setDeliveryPorts] = useState<PortOption[]>([]);
 
   const toPortOptions = (rows: any[]): PortOption[] =>
-    (rows || []).map((r) => ({ code: r.port_code, name: r.port_name || '' }));
+    (rows || []).map((r) => ({ code: r.port_code || '', name: r.port_name || '' }));
 
   useEffect(() => {
     // Scope MLO/Carrier options to the user's current login location — records
@@ -1155,7 +1155,7 @@ const SeaConsolePage: React.FC = () => {
                   <label className="form-label">Carrier Name</label>
                   <NameSearch
                     value={activeHbl.carrier_name}
-                    options={carriers.map((c) => ({ name: c.carrier_name, code: c.carrier_code }))}
+                    options={carriers.map((c) => ({ name: c.carrier_name || '', code: c.carrier_code || '' }))}
                     placeholder="Type to search carrier..."
                     onChange={(name) => updateHbl(activeHblTab, 'carrier_name', name)}
                     onSelect={(name, code) => {
@@ -1200,7 +1200,7 @@ const SeaConsolePage: React.FC = () => {
                   <label className="form-label">MLO Name</label>
                   <NameSearch
                     value={activeHbl.mlo_name}
-                    options={mlos.map((m) => ({ name: m.mlo_name, code: m.mlo_code }))}
+                    options={mlos.map((m) => ({ name: m.mlo_name || '', code: m.mlo_code || '' }))}
                     placeholder="Type to search MLO..."
                     onChange={(name) => updateHbl(activeHblTab, 'mlo_name', name)}
                     onSelect={(name, code) => {
