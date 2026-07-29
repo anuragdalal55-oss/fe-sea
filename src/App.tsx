@@ -20,6 +20,7 @@ import Login from './pages/Login';
 import MloMasterPage from './pages/MloMasterPage';
 import PendingStatementPage from './pages/PendingStatementPage';
 import { NotFoundPage } from './pages/Placeholders';
+import SeaErrorCodePage from './pages/SeaErrorCodePage';
 import SeaConsolePage from './pages/SeaConsolePage';
 import SeaHblListPage from './pages/SeaHblListPage';
 import SeaMblRegisterPage from './pages/SeaMblRegisterPage';
@@ -62,6 +63,7 @@ const AppRoutes: React.FC = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/mbl-register" replace />} />
         <Route path="/login" element={<Navigate to="/mbl-register" replace />} />
+        <Route path="/error-codes" element={<ProtectedRoute><SeaErrorCodePage /></ProtectedRoute>} />
         <Route path="/mbl-register" element={<ProtectedRoute><SeaMblRegisterPage /></ProtectedRoute>} />
         <Route path="/mbl-register/hbl-list/:id" element={<ProtectedRoute><SeaHblListPage /></ProtectedRoute>} />
         <Route path="/mbl" element={<ProtectedRoute><SeaConsolePage /></ProtectedRoute>} />

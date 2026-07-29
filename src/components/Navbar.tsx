@@ -15,6 +15,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { label: 'Error Codes', path: '/error-codes' },
   { label: 'MBL', path: '/mbl-register' },
   // { label: 'New Entry', path: '/mbl' },
   {
